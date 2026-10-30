@@ -1,0 +1,139 @@
+{
+  "schema": 1,
+  "name": "Aetherial Reliquary stores the experience boosts when an alt catches up to the account's highest character",
+  "contract": "Catch-up planned in PR #10113: on an account with no level-60 or prestiged character, a character below the level of the account's highest other character may use Potion of Experience 818046 and Aura of Experience 818059. When it reaches that level, both boosts are removed and stored in Aetherial Reliquary 8263512 with the preservation notice, as at the realm cap. Using the Reliquary at that level restores nothing, keeps the item and says the boosts only work below the level of the highest character. Once the other character is higher again, the Reliquary restores both boosts and is used up. A character alone on an account without a level-60 or prestiged character has no one to catch up to, so its potion is refused and kept. The catch-up rule and its refusal texts are not from a live source.",
+  "timeout_ms": 90000,
+  "players": [
+    { "id": "alt", "race": 1, "class": 1, "level": 20 },
+    { "id": "main", "race": 1, "class": 1, "level": 30, "account_of": "alt" },
+    { "id": "lone", "race": 1, "class": 1, "level": 20 }
+  ],
+  "steps": [
+    { "action": "wait", "label": "Let the fixture settle", "ms": 3000 },
+    { "action": "relog", "actor": "main" },
+    { "action": "add_item", "actor": "alt", "item": 818046, "count": 2 },
+    { "action": "add_item", "actor": "alt", "item": 818059, "count": 1 },
+    { "action": "use_item", "actor": "alt", "item": 818046, "spell": 818046 },
+    {
+      "action": "assert",
+      "label": "Below the level 30 main, the alt drinks the Potion of Experience",
+      "actor": "alt",
+      "metric": "aura",
+      "spell": 818046,
+      "equals": 1,
+      "within_ms": 2000
+    },
+    { "action": "assert", "actor": "alt", "metric": "item_count", "item": 818046, "equals": 1 },
+    { "action": "use_item", "actor": "alt", "item": 818059, "spell": 818059 },
+    {
+      "action": "assert",
+      "label": "Below the level 30 main, the alt uses the Aura of Experience",
+      "actor": "alt",
+      "metric": "aura",
+      "spell": 818059,
+      "equals": 1,
+      "within_ms": 2000
+    },
+    { "action": "assert", "actor": "alt", "metric": "item_count", "item": 818059, "equals": 0 },
+    { "action": "set_level", "actor": "alt", "value": 29 },
+    {
+      "action": "assert",
+      "label": "One level below the main, both boosts stay active",
+      "actor": "alt",
+      "metric": "carried_aura_count",
+      "spells": [818059, 818046],
+      "equals": 2
+    },
+    { "action": "assert", "actor": "alt", "metric": "item_count", "item": 8263512, "equals": 0 },
+    { "action": "set_level", "actor": "alt", "value": 30 },
+    {
+      "action": "assert",
+      "label": "At the main's level, both boosts are removed",
+      "actor": "alt",
+      "metric": "carried_aura_count",
+      "spells": [818059, 818046],
+      "equals": 0
+    },
+    {
+      "action": "assert",
+      "label": "At the main's level, one Aetherial Reliquary is placed in the bags",
+      "actor": "alt",
+      "metric": "item_count",
+      "item": 8263512,
+      "equals": 1
+    },
+    {
+      "action": "assert",
+      "label": "The preservation notice is shown",
+      "actor": "alt",
+      "metric": "notification_contains",
+      "text": "Your Experience boosts have been preserved in your Aetherial Boon Reliquary.",
+      "equals": 1
+    },
+    { "action": "use_item", "actor": "alt", "item": 8263512, "spell": 8263512 },
+    { "action": "wait", "ms": 500 },
+    {
+      "action": "assert",
+      "label": "Used at the main's level, the Reliquary is kept",
+      "actor": "alt",
+      "metric": "item_count",
+      "item": 8263512,
+      "equals": 1
+    },
+    {
+      "action": "assert",
+      "label": "Used at the main's level, nothing is restored",
+      "actor": "alt",
+      "metric": "carried_aura_count",
+      "spells": [818059, 818046],
+      "equals": 0
+    },
+    {
+      "action": "assert",
+      "label": "Used at the main's level, the player is told why",
+      "actor": "alt",
+      "metric": "notification_contains",
+      "text": "Your stored experience buffs only work below the level of your highest character.",
+      "equals": 1
+    },
+    { "action": "set_level", "actor": "main", "value": 40 },
+    { "action": "relog", "actor": "main" },
+    { "action": "use_item", "actor": "alt", "item": 8263512, "spell": 8263512 },
+    {
+      "action": "assert",
+      "label": "Below the level 40 main again, both boosts are restored",
+      "actor": "alt",
+      "metric": "carried_aura_count",
+      "spells": [818059, 818046],
+      "equals": 2,
+      "within_ms": 2000
+    },
+    {
+      "action": "assert",
+      "label": "The restoring use consumes the Reliquary",
+      "actor": "alt",
+      "metric": "item_count",
+      "item": 8263512,
+      "equals": 0
+    },
+    { "action": "add_item", "actor": "lone", "item": 818046, "count": 1 },
+    { "action": "use_item", "actor": "lone", "item": 818046, "spell": 818046 },
+    { "action": "wait", "ms": 1000 },
+    {
+      "action": "assert",
+      "label": "Alone on its account, the character cannot drink the potion",
+      "actor": "lone",
+      "metric": "aura",
+      "spell": 818046,
+      "equals": 0
+    },
+    {
+      "action": "assert",
+      "label": "The refused potion is kept",
+      "actor": "lone",
+      "metric": "item_count",
+      "item": 818046,
+      "equals": 1
+    }
+  ]
+}

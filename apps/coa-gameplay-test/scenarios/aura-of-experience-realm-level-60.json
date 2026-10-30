@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "name": "Aura of Experience needs a level 60 character on the realm",
-  "contract": "Item 818059 Aura of Experience is refused, and kept, while no character on the account has reached level 60, as its CoA tooltip states (This item requires you to have a level 60 on this realm to be able to consume). A level 59 character on the account is not enough. Once another character of the account is saved at level 60, the same alt consumes one item and receives aura 818059.",
+  "contract": "Item 818059 Aura of Experience is refused, and kept, while no character on the account has reached level 60, as its CoA tooltip states (This item requires you to have a level 60 on this realm to be able to consume), unless the character is below the level of another character on the account (the account catch-up planned in PR #10113, covered by aetherial-reliquary-account-catch-up). Another character at the alt's own level is not enough. Once that character is saved at level 60, the same alt consumes one item and receives aura 818059.",
   "players": [
     {
       "id": "alt",
@@ -13,7 +13,7 @@
       "id": "main",
       "race": 1,
       "class": 1,
-      "level": 59,
+      "level": 10,
       "account_of": "alt"
     }
   ],
@@ -28,7 +28,7 @@
       "metric": "aura",
       "spell": 818059,
       "equals": 0,
-      "label": "A level 59 character on the account does not unlock the aura"
+      "label": "Another character at the alt's own level does not unlock the aura"
     },
     {
       "action": "assert",

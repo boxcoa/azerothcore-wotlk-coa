@@ -1,6 +1,7 @@
 /* Copyright (C) 2016+ AzerothCore, GNU AGPL v3. */
 
 #include "AscensionAetherialReliquary.h"
+#include "AscensionAccountProgress.h"
 #include "Chat.h"
 #include "DatabaseEnv.h"
 #include "Item.h"
@@ -13,6 +14,7 @@
 #include "StringFormat.h"
 #include "World.h"
 
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -24,6 +26,8 @@ constexpr std::string_view CapturedMessage =
     "Your Experience boosts have been preserved in your Aetherial Boon Reliquary.";
 constexpr std::string_view EmptyMessage = "Your Aetherial Reliquary holds no stored buffs.";
 constexpr std::string_view BelowMaxLevelMessage = "Your stored experience buffs only work below max level.";
+constexpr std::string_view BelowHighestCharacterMessage =
+    "Your stored experience buffs only work below the level of your highest character.";
 constexpr std::string_view SaveFailedMessage =
     "Your Aetherial Reliquary could not be saved. Contact a game master.";
 constexpr char MailSubject[] = "Aetherial Reliquary";
@@ -41,8 +45,19 @@ std::string_view ReasonName(CaptureReason reason)
     {
         case CaptureReason::RealmCap:
             return "realm level cap";
+        case CaptureReason::AccountCatchUp:
+            return "account catch-up level";
     }
     return "unknown";
+}
+
+std::optional<AccountLevels> AccountLevelsOf(Player const* player)
+{
+    std::optional<AscensionAccountProgress::Summary> const summary =
+        AscensionAccountProgress::Summarize(player, AscensionAccountProgress::RealmProgressLevel);
+    if (!summary)
+        return std::nullopt;
+    return AccountLevels{ summary->reachedLevelOrPrestige, summary->highestOtherLevel };
 }
 
 std::string Describe(StoredBuffs const& buffs)
@@ -177,8 +192,19 @@ bool IsAtCaptureLevel(Player const* player, CaptureReason reason)
     {
         case CaptureReason::RealmCap:
             return player->GetLevel() >= sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL);
+        case CaptureReason::AccountCatchUp:
+        {
+            std::optional<AccountLevels> const account = AccountLevelsOf(player);
+            return account && IsAtCatchUpLevel(*account, player->GetLevel());
+        }
     }
     return false;
+}
+
+bool CatchUpAllowsBoosts(Player const* player)
+{
+    std::optional<AccountLevels> const account = AccountLevelsOf(player);
+    return account && AetherialReliquary::CatchUpAllowsBoosts(*account, player->GetLevel());
 }
 
 StoredBuffs GetStored(Player const* player)
@@ -222,12 +248,23 @@ bool CaptureBuffs(Player* player, CaptureReason reason)
     Write(player, after);
 
     bool const saved = Commit(player, trans, "capture");
-    LOG_INFO("coa", "Aetherial Reliquary captured {} from {} ({}) at the {}: stored {} -> {}{}.", Describe(active),
-        player->GetName(), player->GetGUID().ToString(), ReasonName(reason), Describe(before), Describe(after),
-        issued ? ", reliquary issued" : "");
+    LOG_INFO("coa", "Aetherial Reliquary captured {} from {} ({}) at the {} (level {}): stored {} -> {}{}.",
+        Describe(active), player->GetName(), player->GetGUID().ToString(), ReasonName(reason), player->GetLevel(),
+        Describe(before), Describe(after), issued ? ", reliquary issued" : "");
     if (saved)
         ChatHandler(player->GetSession()).SendNotification(CapturedMessage);
     return saved;
+}
+
+bool CaptureAtCaptureLevel(Player* player)
+{
+    if (!player || ActiveBuffs(player).Empty())
+        return false;
+
+    for (CaptureReason reason : { CaptureReason::RealmCap, CaptureReason::AccountCatchUp })
+        if (IsAtCaptureLevel(player, reason))
+            return CaptureBuffs(player, reason);
+    return false;
 }
 
 bool RestoreBuffs(Player* player)
@@ -267,13 +304,19 @@ class Displacement final : public SpellScript
         }
 
         if (IsAtCaptureLevel(player, CaptureReason::RealmCap))
-        {
-            CaptureBuffs(player, CaptureReason::RealmCap);
-            ChatHandler(player->GetSession()).SendNotification(BelowMaxLevelMessage);
-            return SPELL_FAILED_DONT_REPORT;
-        }
+            return Refuse(player, CaptureReason::RealmCap, BelowMaxLevelMessage);
+
+        if (IsAtCaptureLevel(player, CaptureReason::AccountCatchUp))
+            return Refuse(player, CaptureReason::AccountCatchUp, BelowHighestCharacterMessage);
 
         return SPELL_CAST_OK;
+    }
+
+    static SpellCastResult Refuse(Player* player, CaptureReason reason, std::string_view message)
+    {
+        CaptureBuffs(player, reason);
+        ChatHandler(player->GetSession()).SendNotification(message);
+        return SPELL_FAILED_DONT_REPORT;
     }
 
     void Restore()

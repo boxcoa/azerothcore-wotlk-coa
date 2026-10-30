@@ -74,6 +74,22 @@ struct StoredBuffs
     return merged;
 }
 
+struct AccountLevels
+{
+    bool reachedRealmProgress;
+    std::uint8_t highestOtherLevel;
+};
+
+[[nodiscard]] constexpr bool CatchUpAllowsBoosts(AccountLevels account, std::uint8_t level)
+{
+    return !account.reachedRealmProgress && level < account.highestOtherLevel;
+}
+
+[[nodiscard]] constexpr bool IsAtCatchUpLevel(AccountLevels account, std::uint8_t level)
+{
+    return !account.reachedRealmProgress && level >= account.highestOtherLevel;
+}
+
 [[nodiscard]] constexpr bool HasUniqueEntries()
 {
     for (std::size_t i = 0; i < StorableBuffs.size(); ++i)

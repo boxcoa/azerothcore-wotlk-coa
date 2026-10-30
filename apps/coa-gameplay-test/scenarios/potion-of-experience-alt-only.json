@@ -1,10 +1,10 @@
 {
   "schema": 1,
   "name": "Potion of Experience needs a level 60 on the realm and is only for alts below the account's highest level",
-  "contract": "Potion of Experience (818046) follows Aura of Experience (818059): it is refused, and kept, while no character on the account has reached level 60. For a CoA class character (Resilient Constitution 552011) its tooltip also states: This item can only be used on alt characters who are not the highest level on your account. A level 20 character whose other character is level 30 is refused because nobody on the account is level 60. Once the other character is saved at level 60, the level 20 alt drinks one potion and receives aura 818046. Raised to level 60 itself, the alt is no longer below the account's highest level and is refused again.",
+  "contract": "Potion of Experience (818046) follows Aura of Experience (818059): it is refused, and kept, while no character on the account has reached level 60. For a CoA class character (Resilient Constitution 552011) its tooltip also states: This item can only be used on alt characters who are not the highest level on your account. A level 20 character whose other character is also level 20 is refused because nobody on the account is level 60 and no other character is above it to catch up to (the account catch-up planned in PR #10113 is covered by aetherial-reliquary-account-catch-up). Once the other character is saved at level 60, the level 20 alt drinks one potion and receives aura 818046. Raised to level 60 itself, the alt is no longer below the account's highest level and is refused again.",
   "players": [
     { "id": "alt", "race": 1, "class": 12, "level": 20 },
-    { "id": "main", "race": 1, "class": 1, "level": 30, "account_of": "alt" }
+    { "id": "main", "race": 1, "class": 1, "level": 20, "account_of": "alt" }
   ],
   "steps": [
     { "action": "relog", "actor": "main" },
@@ -18,7 +18,7 @@
       "metric": "aura",
       "spell": 818046,
       "equals": 0,
-      "label": "A higher level 30 character does not unlock the potion without a level 60 on the account"
+      "label": "Another level 20 character does not unlock the potion without a level 60 on the account"
     },
     {
       "action": "assert",

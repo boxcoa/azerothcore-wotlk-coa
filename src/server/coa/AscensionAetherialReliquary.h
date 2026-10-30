@@ -11,11 +11,14 @@ namespace AetherialReliquary
 {
 enum class CaptureReason
 {
-    RealmCap
+    RealmCap,
+    AccountCatchUp
 };
 
 [[nodiscard]] bool IsAtCaptureLevel(Player const* player, CaptureReason reason);
+[[nodiscard]] bool CatchUpAllowsBoosts(Player const* player);
 bool CaptureBuffs(Player* player, CaptureReason reason);
+bool CaptureAtCaptureLevel(Player* player);
 [[nodiscard]] StoredBuffs GetStored(Player const* player);
 bool RestoreBuffs(Player* player);
 }

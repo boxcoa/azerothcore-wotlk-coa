@@ -425,7 +425,8 @@ constexpr uint32 SPELL_TALENT_LEARNING_CUE = 47292;
 constexpr uint32 VANITY_CATEGORY_COMPANIONS = 0x08000000;
 constexpr uint32 VANITY_CATEGORY_CONSUMABLE = 0x40000000;
 constexpr uint32 ITEM_AURA_OF_EXPERIENCE = 818059;
-constexpr uint8 VANITY_REALM_LEVEL = 60;
+constexpr uint32 ITEM_POTION_OF_EXPERIENCE = 818046;
+constexpr uint8 VANITY_REALM_LEVEL = AscensionAccountProgress::RealmProgressLevel;
 constexpr uint32 ITEM_WONDROUS_WISDOMBALL = 101169;
 constexpr uint32 ITEM_FIX_O_TRON_5000 = 97330;
 constexpr std::array<uint32, 18> BROKEN_COMPANION_SPELLS = {
@@ -6860,9 +6861,14 @@ public:
     return true;
   }
 
+    [[nodiscard]] static bool IsExperienceBoostItem(ItemTemplate const* proto)
+    {
+        return proto->ItemId == ITEM_AURA_OF_EXPERIENCE || proto->ItemId == ITEM_POTION_OF_EXPERIENCE;
+    }
+
     [[nodiscard]] bool RequiresVanityRealmLevel(ItemTemplate const* proto) const
     {
-        return proto->ItemId == ITEM_AURA_OF_EXPERIENCE || proto->ItemId == 818046 ||
+        return IsExperienceBoostItem(proto) ||
             (proto->Quality == ITEM_QUALITY_HEIRLOOM && _vanityItems.contains(proto->ItemId));
     }
 
@@ -6875,6 +6881,18 @@ public:
     {
         if (!RequiresVanityRealmLevel(proto) || AccountHasVanityRealmLevel(player))
             return false;
+
+        if (IsExperienceBoostItem(proto))
+        {
+            if (AetherialReliquary::CatchUpAllowsBoosts(player))
+                return false;
+
+            ChatHandler(player->GetSession()).PSendSysMessage(
+                "This item requires a level {} or a previously prestiged character on your account on this realm, "
+                "or another character on your account above this character's level, to consume.",
+                VANITY_REALM_LEVEL);
+            return true;
+        }
 
         ChatHandler(player->GetSession()).PSendSysMessage(
             "This item requires a level {} or a previously prestiged character on your account on this realm to {}.",
@@ -9144,10 +9162,9 @@ class AscensionCompatPlayerScript : public PlayerScript {
         }
     }
 
-    void StoreExperienceBuffsAtRealmCap(Player* player)
+    void StoreExperienceBuffsAtCaptureLevel(Player* player)
     {
-        if (AetherialReliquary::IsAtCaptureLevel(player, AetherialReliquary::CaptureReason::RealmCap))
-            AetherialReliquary::CaptureBuffs(player, AetherialReliquary::CaptureReason::RealmCap);
+        AetherialReliquary::CaptureAtCaptureLevel(player);
     }
 
     static bool CanUseVanityRealmLevelItem(Player* player, Item* item, uint8 castCount)
@@ -9365,7 +9382,7 @@ public:
       AscensionDisplayPatchService::Instance().OnPlayerLogin(player);
       RefreshScaledQuestQueries(player);
       SendAverageItemLevel(player);
-      StoreExperienceBuffsAtRealmCap(player);
+      StoreExperienceBuffsAtCaptureLevel(player);
     }
   }
 
@@ -9386,7 +9403,7 @@ public:
       AscensionClassService::Instance().SendCharacterAdvancementKnownEntries(player);
 
       RefreshScaledQuestQueries(player);
-      StoreExperienceBuffsAtRealmCap(player);
+      StoreExperienceBuffsAtCaptureLevel(player);
     }
   }
 

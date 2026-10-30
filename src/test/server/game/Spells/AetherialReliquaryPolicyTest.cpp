@@ -63,3 +63,35 @@ TEST(AetherialReliquary, PotionTimeNeverExceedsAnAuraDuration)
     EXPECT_EQ(AetherialReliquary::Merge(Stored(0, max), Stored(0, max)), Stored(0, max));
     EXPECT_EQ(AetherialReliquary::Merge(Stored(0, 0xFFFFFFFFu), Stored(0, 1)), Stored(0, max));
 }
+
+TEST(AetherialReliquary, CatchUpAllowsBoostsBelowTheAccountsHighestOtherCharacter)
+{
+    AetherialReliquary::AccountLevels const account{ false, 30 };
+    EXPECT_TRUE(AetherialReliquary::CatchUpAllowsBoosts(account, 1));
+    EXPECT_TRUE(AetherialReliquary::CatchUpAllowsBoosts(account, 29));
+    EXPECT_FALSE(AetherialReliquary::IsAtCatchUpLevel(account, 29));
+}
+
+TEST(AetherialReliquary, CatchUpEndsAtTheAccountsHighestOtherCharacter)
+{
+    AetherialReliquary::AccountLevels const account{ false, 30 };
+    EXPECT_FALSE(AetherialReliquary::CatchUpAllowsBoosts(account, 30));
+    EXPECT_TRUE(AetherialReliquary::IsAtCatchUpLevel(account, 30));
+    EXPECT_FALSE(AetherialReliquary::CatchUpAllowsBoosts(account, 45));
+    EXPECT_TRUE(AetherialReliquary::IsAtCatchUpLevel(account, 45));
+}
+
+TEST(AetherialReliquary, ALoneCharacterHasNothingToCatchUpTo)
+{
+    AetherialReliquary::AccountLevels const account{ false, 0 };
+    EXPECT_FALSE(AetherialReliquary::CatchUpAllowsBoosts(account, 1));
+    EXPECT_TRUE(AetherialReliquary::IsAtCatchUpLevel(account, 1));
+}
+
+TEST(AetherialReliquary, AccountsWithRealmProgressKeepTheRealmCapRule)
+{
+    AetherialReliquary::AccountLevels const account{ true, 60 };
+    EXPECT_FALSE(AetherialReliquary::CatchUpAllowsBoosts(account, 20));
+    EXPECT_FALSE(AetherialReliquary::IsAtCatchUpLevel(account, 20));
+    EXPECT_FALSE(AetherialReliquary::IsAtCatchUpLevel(account, 60));
+}
