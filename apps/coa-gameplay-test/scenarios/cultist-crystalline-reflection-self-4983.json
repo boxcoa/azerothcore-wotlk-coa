@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "name": "Crystalline Reflection reflects damage absorbed by the Cultist's own Void Shield, not only an ally's (#4983)",
+  "contract": "Crystalline Reflection 525060 reads 'Increases the chance for Void Shield to resist dispel effects on allies by 50% and it now also reflects 50% of the damage absorbed.' (Ascension tooltip capture). 'On allies' qualifies the dispel resistance; the reflect clause has no target restriction, and Void Shield 500715 ('Shields an ally') can be cast on the Cultist. aura_ascension_cultist_lifecycle::AfterAbsorb reflects by casting 525062 from the Cultist on the attacker with 50% of the absorbed amount. #4983: it skipped the reflect whenever the shield was on the Cultist. Asserted: with 525060 learned, an enemy Frostbolt 42842 absorbed by Void Shield on an ally makes the Cultist deal 525062 damage to that enemy (control), and a Frostbolt absorbed by Void Shield on the Cultist does the same.",
+  "timeout_ms": 60000,
+  "location": { "map": 0, "x": -8917.41, "y": -115.853, "z": 82.3711, "o": 0 },
+  "players": [
+    { "id": "cultist", "race": 1, "class": 25, "level": 80, "allow_regeneration": false },
+    { "id": "ally", "race": 1, "class": 1, "level": 80, "allow_regeneration": false }
+  ],
+  "creatures": [
+    { "id": "enemy", "owner": "cultist", "entry": 299, "level": 80, "health": 1000000, "distance": 5, "spell_hit_bonus": 100 }
+  ],
+  "steps": [
+    { "action": "wait", "label": "Let the fixtures settle", "ms": 5000 },
+    { "action": "learn", "actor": "cultist", "spell": 500715 },
+    { "action": "learn", "actor": "cultist", "spell": 525060 },
+    { "action": "assert", "label": "SETUP: Crystalline Reflection is active", "actor": "cultist", "metric": "aura", "spell": 525060, "equals": 1 },
+    { "action": "set_health", "actor": "cultist", "maximum": 100000, "value": 100000 },
+    { "action": "set_health", "actor": "ally", "maximum": 100000, "value": 100000 },
+    { "action": "cast", "actor": "cultist", "spell": 500715, "target": "ally" },
+    { "action": "assert", "label": "SETUP: the ally wears Void Shield", "actor": "ally", "metric": "aura", "spell": 500715, "equals": 1, "within_ms": 1000 },
+    { "action": "cast", "actor": "enemy", "spell": 42842, "target": "ally" },
+    {
+      "action": "assert",
+      "label": "Damage absorbed by the ally's Void Shield is reflected onto the enemy",
+      "actor": "cultist",
+      "metric": "spell_damage_count",
+      "spell": 525062,
+      "target": "enemy",
+      "min": 1,
+      "within_ms": 3000
+    },
+    { "action": "snapshot", "actor": "cultist", "metric": "spell_damage_count", "spell": 525062, "target": "enemy", "save_as": "reflected_before_self" },
+    { "action": "wait", "label": "Let the global cooldown from the first Void Shield clear", "ms": 1700 },
+    { "action": "cast", "actor": "cultist", "spell": 500715 },
+    { "action": "assert", "label": "SETUP: the Cultist wears its own Void Shield", "actor": "cultist", "metric": "aura", "spell": 500715, "equals": 1, "within_ms": 1000 },
+    { "action": "cast", "actor": "enemy", "spell": 42842, "target": "cultist" },
+    {
+      "action": "assert",
+      "label": "Damage absorbed by the Cultist's own Void Shield is reflected onto the enemy (#4983)",
+      "actor": "cultist",
+      "metric": "spell_damage_count",
+      "spell": 525062,
+      "target": "enemy",
+      "relative_to": "reflected_before_self",
+      "min": 1,
+      "within_ms": 3000
+    }
+  ]
+}
