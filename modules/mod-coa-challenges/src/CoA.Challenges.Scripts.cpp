@@ -59,6 +59,8 @@ namespace CoAChallenges
         return active.contains(CHALLENGE_SLOW_AND_STEADY) || active.contains(CHALLENGE_PRESTIGE_SLOW_AND_STEADY);
     }
 
+    void AddCurseScripts(); // CoA.Challenges.Curses.cpp
+
     // Heal-path helpers (defined below, used by HealBlocked earlier in this TU).
     void AllowBandageHeal(uint32 guid);
     bool ConsumeBandageAllow(uint32 guid);
@@ -4180,4 +4182,5 @@ void Addmod_coa_challengesScripts()
     new CoAChallenges::CoAChallengesSpells();
     new CoAChallenges::CoAChallengesAllCreature();
     new CoAChallenges::CoAChallengesAccount();
+    CoAChallenges::AddCurseScripts();
 }

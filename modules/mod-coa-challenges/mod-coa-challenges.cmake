@@ -3,4 +3,5 @@
 set_property(GLOBAL APPEND PROPERTY ACORE_MODULE_TEST_INCLUDES
     "${CMAKE_SOURCE_DIR}/modules/mod-coa-challenges/src")
 set_property(GLOBAL APPEND PROPERTY ACORE_MODULE_TEST_SOURCES
-    "${CMAKE_SOURCE_DIR}/modules/mod-coa-challenges/tests/CoAChallengeParseTest.cpp")
+    "${CMAKE_SOURCE_DIR}/modules/mod-coa-challenges/tests/CoAChallengeParseTest.cpp"
+    "${CMAKE_SOURCE_DIR}/modules/mod-coa-challenges/tests/CoAChallengeCursesTest.cpp")
