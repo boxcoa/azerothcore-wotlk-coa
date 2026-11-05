@@ -7128,6 +7128,10 @@ void AuraEffect::HandleObsModPowerAuraTick(Unit* target, Unit* caster) const
         return;
     }
 
+    // NO_ENERGIZING (Inn-Sane family): percentage power ticks such as Rest restore power like an energize.
+    if (target->IsPlayer() && !sScriptMgr->OnPlayerCanEnergize(target->ToPlayer(), int32(PowerType)))
+        return;
+
     // don't regen when permanent aura target has full power
     if (GetBase()->IsPermanent() && target->GetPower(PowerType) == target->GetMaxPower(PowerType))
         return;
