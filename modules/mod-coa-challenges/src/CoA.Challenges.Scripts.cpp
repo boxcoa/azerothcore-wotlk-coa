@@ -3962,13 +3962,41 @@ namespace CoAChallenges
         void OnUnitDeath(Unit* unit, Unit* killer) override
         {
             Creature* killed = unit ? unit->ToCreature() : nullptr;
-            if (!killed || !killer || killer->IsPlayer() || killer->IsPet() || killer->IsTotem())
+            if (!killed)
                 return;
-            if (Player* guardianOwner = killer->GetCharmerOrOwnerPlayerOrPlayerItself())
+            // Player, pet and totem killing blows are credited by the PlayerScript hooks.
+            if (killer && (killer->IsPlayer() || killer->IsPet() || killer->IsTotem()))
+                return;
+            if (Player* guardianOwner = killer ? killer->GetCharmerOrOwnerPlayerOrPlayerItself() : nullptr)
             {
                 CoAChallengesPlayer::CreditKill(guardianOwner, killed);
                 CoAChallengesPlayer::FailForbiddenKill(guardianOwner, killed);
+                return;
             }
+            // Killing blow from an NPC with no player owner (e.g. the Disciple of Naralex
+            // finishing Mutanus) or from no unit at all: credit whoever tapped the creature,
+            // as Unit::Kill does for XP, loot and quest credit. No forbidden-kill failure here:
+            // the player did not land the blow.
+            if (Player* tapper = KillTapper(killed))
+                CoAChallengesPlayer::CreditKill(tapper, killed);
+        }
+
+        // Same tapper resolution as Unit::Kill: the loot recipient if on the map, else
+        // the first member of the tapping group within loot-reward distance. Empty when
+        // players did not deal enough damage for the kill to be rewarded.
+        static Player* KillTapper(Creature* killed)
+        {
+            if (!killed->IsDamageEnoughForLootingAndReward() || killed->IsLootRewardDisabled())
+                return nullptr;
+            if (Player* recipient = killed->GetLootRecipient())
+                if (recipient->IsInMap(killed))
+                    return recipient;
+            if (Group* group = killed->GetLootRecipientGroup())
+                for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+                    if (Player* member = itr->GetSource())
+                        if (member->IsAtLootRewardDistance(killed))
+                            return member;
+            return nullptr;
         }
 
         bool ShouldTrackValuesUpdatePosByIndex(Unit const* unit, uint8 /*updateType*/, uint16 index) override
