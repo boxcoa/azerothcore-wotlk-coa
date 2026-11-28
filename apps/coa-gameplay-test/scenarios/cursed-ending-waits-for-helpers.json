@@ -1,0 +1,135 @@
+{
+  "schema": 1,
+  "name": "Cursed!: a lane stays busy while any spell of its curse is on the player",
+  "contract": [
+    "Issue #10788. A curse ends only when neither its parent nor a helper remains on the player. With",
+    "Whispers 901868 removed but its Visions helper 901860 still applied, the minor lane does not roll a",
+    "forced Shortening 901844; once the helper is gone, the next forced roll is announced."
+  ],
+  "timeout_ms": 300000,
+  "location": {
+    "map": 0,
+    "x": -9617.06,
+    "y": -288.949,
+    "z": 57.3053
+  },
+  "players": [
+    {
+      "id": "hero",
+      "race": 1,
+      "class": 1,
+      "level": 1
+    }
+  ],
+  "steps": [
+    {
+      "action": "start_challenge",
+      "actor": "hero",
+      "challenge": 617,
+      "level": 1
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "challenge_start_code",
+      "equals": 0,
+      "within_ms": 3000,
+      "label": "the Cursed! trial activates"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "aura",
+      "spell": 943601,
+      "equals": 1,
+      "within_ms": 3000,
+      "label": "the trial applies Cursed! 943601"
+    },
+    {
+      "action": "wait",
+      "ms": 500
+    },
+    {
+      "action": "console",
+      "command": "coa cursed presence Harnessa present"
+    },
+    {
+      "action": "console",
+      "command": "coa cursed force Harnessa 901868"
+    },
+    {
+      "action": "wait",
+      "ms": 1000
+    },
+    {
+      "action": "console",
+      "command": "coa cursed reply Harnessa minor"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "aura",
+      "spell": 901868,
+      "equals": 1,
+      "label": "Whispers lands",
+      "within_ms": 6000
+    },
+    {
+      "action": "set_aura",
+      "actor": "hero",
+      "spell": 901860,
+      "stacks": 1
+    },
+    {
+      "action": "set_aura",
+      "actor": "hero",
+      "spell": 901868,
+      "stacks": 0
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "system_messages",
+      "save_as": "helper"
+    },
+    {
+      "action": "console",
+      "command": "coa cursed force Harnessa 901844"
+    },
+    {
+      "action": "wait",
+      "ms": 10000
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "system_messages",
+      "relative_to": "helper",
+      "label": "no new curse is announced while the helper remains",
+      "equals": 0
+    },
+    {
+      "action": "set_aura",
+      "actor": "hero",
+      "spell": 901860,
+      "stacks": 0
+    },
+    {
+      "action": "wait",
+      "ms": 1000
+    },
+    {
+      "action": "console",
+      "command": "coa cursed force Harnessa 901844"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "system_messages",
+      "relative_to": "helper",
+      "label": "the lane rolls again once the helper is gone",
+      "min": 1,
+      "within_ms": 2000
+    }
+  ]
+}

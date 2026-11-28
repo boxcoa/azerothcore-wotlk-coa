@@ -1,0 +1,114 @@
+{
+  "schema": 1,
+  "name": "Cursed!: a relog keeps the pending curse and announces it again",
+  "contract": [
+    "Issue #10788. A relog does not drop or reroll a pending curse. Narcolepsy 901841 is announced, the",
+    "character relogs 5 s into the 15 s warning, the same curse is announced again with a 10 s",
+    "remaining warning and still lands after the proof reply."
+  ],
+  "timeout_ms": 300000,
+  "location": {
+    "map": 0,
+    "x": -9617.06,
+    "y": -288.949,
+    "z": 57.3053
+  },
+  "players": [
+    {
+      "id": "hero",
+      "race": 1,
+      "class": 1,
+      "level": 1
+    }
+  ],
+  "steps": [
+    {
+      "action": "start_challenge",
+      "actor": "hero",
+      "challenge": 617,
+      "level": 1
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "challenge_start_code",
+      "equals": 0,
+      "within_ms": 3000,
+      "label": "the Cursed! trial activates"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "aura",
+      "spell": 943601,
+      "equals": 1,
+      "within_ms": 3000,
+      "label": "the trial applies Cursed! 943601"
+    },
+    {
+      "action": "set_level",
+      "actor": "hero",
+      "value": 10
+    },
+    {
+      "action": "wait",
+      "ms": 500
+    },
+    {
+      "action": "console",
+      "command": "coa cursed presence Harnessa present"
+    },
+    {
+      "action": "console",
+      "command": "coa cursed force Harnessa 901841"
+    },
+    {
+      "action": "wait",
+      "ms": 5000
+    },
+    {
+      "action": "relog",
+      "actor": "hero"
+    },
+    {
+      "action": "wait",
+      "ms": 500
+    },
+    {
+      "action": "console",
+      "command": "coa cursed presence Harnessa present"
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "system_messages",
+      "save_as": "back"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "system_messages",
+      "relative_to": "back",
+      "label": "the pending curse is announced again",
+      "min": 1,
+      "within_ms": 2000
+    },
+    {
+      "action": "wait",
+      "ms": 6000
+    },
+    {
+      "action": "console",
+      "command": "coa cursed reply Harnessa major"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "aura",
+      "spell": 901841,
+      "equals": 1,
+      "label": "the pending curse still lands",
+      "within_ms": 6000
+    }
+  ]
+}

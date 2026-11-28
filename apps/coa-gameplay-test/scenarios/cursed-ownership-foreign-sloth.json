@@ -1,0 +1,95 @@
+{
+  "schema": 1,
+  "name": "Cursed!: a pool spell that the trial did not cast does not occupy a lane",
+  "contract": [
+    "Issue #10788. Lanes are busy only for curses the trial cast. Curse of Sloth 901801 applied as a",
+    "fixture after the trial started (as the RFC Taragaman scenario reuses it) does not stop the minor",
+    "lane from announcing and landing a forced Shortening 901844."
+  ],
+  "timeout_ms": 300000,
+  "location": {
+    "map": 0,
+    "x": -9617.06,
+    "y": -288.949,
+    "z": 57.3053
+  },
+  "players": [
+    {
+      "id": "hero",
+      "race": 1,
+      "class": 1,
+      "level": 1
+    }
+  ],
+  "steps": [
+    {
+      "action": "start_challenge",
+      "actor": "hero",
+      "challenge": 617,
+      "level": 1
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "challenge_start_code",
+      "equals": 0,
+      "within_ms": 3000,
+      "label": "the Cursed! trial activates"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "aura",
+      "spell": 943601,
+      "equals": 1,
+      "within_ms": 3000,
+      "label": "the trial applies Cursed! 943601"
+    },
+    {
+      "action": "wait",
+      "ms": 500
+    },
+    {
+      "action": "console",
+      "command": "coa cursed presence Harnessa present"
+    },
+    {
+      "action": "set_aura",
+      "actor": "hero",
+      "spell": 901801,
+      "stacks": 1
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "system_messages",
+      "save_as": "sloth"
+    },
+    {
+      "action": "console",
+      "command": "coa cursed force Harnessa 901844"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "system_messages",
+      "relative_to": "sloth",
+      "label": "the minor lane still announces a curse",
+      "min": 1,
+      "within_ms": 2000
+    },
+    {
+      "action": "console",
+      "command": "coa cursed reply Harnessa minor"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "aura",
+      "spell": 901844,
+      "equals": 1,
+      "label": "Shortening lands beside the fixture Sloth",
+      "within_ms": 6000
+    }
+  ]
+}

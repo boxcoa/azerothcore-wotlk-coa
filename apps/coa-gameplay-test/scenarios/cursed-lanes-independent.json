@@ -1,0 +1,111 @@
+{
+  "schema": 1,
+  "name": "Cursed!: a long minor curse does not block the major lane",
+  "contract": [
+    "Issue #10788. The minor lane (tiers 1-2) and major lane (tiers 3-4) each run one curse at a time.",
+    "Overgrowth 901843 (230 s, minor) stays active while a forced Narcolepsy 901841 (major) lands."
+  ],
+  "timeout_ms": 300000,
+  "location": {
+    "map": 0,
+    "x": -9617.06,
+    "y": -288.949,
+    "z": 57.3053
+  },
+  "players": [
+    {
+      "id": "hero",
+      "race": 1,
+      "class": 1,
+      "level": 1
+    }
+  ],
+  "steps": [
+    {
+      "action": "start_challenge",
+      "actor": "hero",
+      "challenge": 617,
+      "level": 1
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "challenge_start_code",
+      "equals": 0,
+      "within_ms": 3000,
+      "label": "the Cursed! trial activates"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "aura",
+      "spell": 943601,
+      "equals": 1,
+      "within_ms": 3000,
+      "label": "the trial applies Cursed! 943601"
+    },
+    {
+      "action": "set_level",
+      "actor": "hero",
+      "value": 10
+    },
+    {
+      "action": "wait",
+      "ms": 500
+    },
+    {
+      "action": "console",
+      "command": "coa cursed presence Harnessa present"
+    },
+    {
+      "action": "console",
+      "command": "coa cursed force Harnessa 901843"
+    },
+    {
+      "action": "wait",
+      "ms": 1000
+    },
+    {
+      "action": "console",
+      "command": "coa cursed reply Harnessa minor"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "aura",
+      "spell": 901843,
+      "equals": 1,
+      "label": "Overgrowth lands in the minor lane",
+      "within_ms": 6000
+    },
+    {
+      "action": "console",
+      "command": "coa cursed force Harnessa 901841"
+    },
+    {
+      "action": "wait",
+      "ms": 16000
+    },
+    {
+      "action": "console",
+      "command": "coa cursed reply Harnessa major"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "aura",
+      "spell": 901841,
+      "equals": 1,
+      "label": "Narcolepsy lands in the major lane",
+      "within_ms": 6000
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "aura",
+      "spell": 901843,
+      "equals": 1,
+      "label": "Overgrowth is still active"
+    }
+  ]
+}

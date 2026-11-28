@@ -399,6 +399,16 @@ void RefreshFatigueTracking(Player* player, std::vector<ActiveChallengeRow> cons
 void TrackSpellbind(Player* player, uint32 challengeID);
 void UntrackSpellbind(Player* player);
 void RefreshSpellbindTracking(Player* player);
+void CursesUpdate(Player* player, uint32 diff);
+void CursesOnLogin(Player* player);
+void CursesOnPacketSent(WorldSession* session, WorldPacket const& packet);
+void CursesOnPacketReceived(WorldSession* session, WorldPacket const& packet);
+bool CursesPlayerAbsent(Player const* player);
+bool HandleCoACursedForceCommand(ChatHandler* handler, Acore::ChatCommands::PlayerIdentifier target, uint32 spell);
+bool HandleCoACursedPresenceCommand(ChatHandler* handler, Acore::ChatCommands::PlayerIdentifier target,
+    std::string mode);
+bool HandleCoACursedReplyCommand(ChatHandler* handler, Acore::ChatCommands::PlayerIdentifier target,
+    std::string which);
 void TrackInvertedBreath(Player* player, uint32 challengeID);
 void UntrackInvertedBreath(Player* player);
 void RefreshInvertedBreathTracking(Player* player);

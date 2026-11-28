@@ -1470,6 +1470,7 @@ namespace CoAChallenges
 
         void OnPlayerLogin(Player* player) override
         {
+            CursesOnLogin(player);
             if (PlayerHasRule(player, "CHALLENGE_RULES_TYPE_PVE_ONLY") &&
                 !AscensionRulesets::Has(player, AscensionRulesets::Ruleset::PvE))
                 AscensionRulesets::Apply(player, AscensionRulesets::Ruleset::PvE);
@@ -2472,6 +2473,7 @@ namespace CoAChallenges
             HungerUpdate(player, diff);
             FatigueUpdate(player, diff);
             SpellbindUpdate(player, diff);
+            CursesUpdate(player, diff);
             EnforceHighRisk(player);
             UpdateCosmeticElite(player, diff);
             UpdateAdventureHealthPreview(player, diff);
@@ -2592,6 +2594,7 @@ namespace CoAChallenges
 
         bool CanPacketSend(WorldSession* session, WorldPacket const& packet) override
         {
+            CursesOnPacketSent(session, packet);
             if (packet.GetOpcode() != SMSG_CREATURE_QUERY_RESPONSE)
                 return true;
             return !SendWithCosmeticEliteRank(session, packet);
@@ -2599,6 +2602,7 @@ namespace CoAChallenges
 
         bool CanPacketReceive(WorldSession* session, WorldPacket const& packet) override
         {
+            CursesOnPacketReceived(session, packet);
             uint16 opcode = packet.GetOpcode();
 
             // CANNOT_UNLEARN_PROFESSIONS: profession choices are permanent.
@@ -2970,6 +2974,12 @@ namespace CoAChallenges
                 { "credit", HandleCoACreditCommand, SEC_ADMINISTRATOR, Console::Yes },
                 { "restore", HandleCoARestoreCommand, SEC_ADMINISTRATOR, Console::Yes }
             };
+            static ChatCommandTable coaCursedTable =
+            {
+                { "force",    HandleCoACursedForceCommand,    SEC_ADMINISTRATOR, Console::Yes },
+                { "presence", HandleCoACursedPresenceCommand, SEC_ADMINISTRATOR, Console::Yes },
+                { "reply",    HandleCoACursedReplyCommand,    SEC_ADMINISTRATOR, Console::Yes }
+            };
             static ChatCommandTable coaChallengesTable =
             {
                 { "reload", HandleCoAReloadCommand, SEC_ADMINISTRATOR, Console::Yes }
@@ -2980,6 +2990,7 @@ namespace CoAChallenges
                 { "trial",     coaActionsTable },
                 { "challenge", coaActionsTable },
                 { "challenges", coaChallengesTable },
+                { "cursed",    coaCursedTable },
                 { "e2e",       HandleCoAE2ECommand, SEC_ADMINISTRATOR, Console::Yes },
                 { "e2emiss",   HandleCoAE2EMissCommand, SEC_ADMINISTRATOR, Console::Yes },
                 { "ruletest",  HandleCoARuleTestCommand, SEC_ADMINISTRATOR, Console::Yes },
