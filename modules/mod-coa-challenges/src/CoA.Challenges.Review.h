@@ -403,6 +403,7 @@ void CursesUpdate(Player* player, uint32 diff);
 void CursesOnLogin(Player* player);
 void CursesOnPacketSent(WorldSession* session, WorldPacket const& packet);
 void CursesOnPacketReceived(WorldSession* session, WorldPacket const& packet);
+void CursesLoadSpellInfo(SpellInfo* spellInfo);
 bool CursesPlayerAbsent(Player const* player);
 void CursesModifyDamageTaken(Unit* target, Unit* attacker, int32& damage, SpellInfo const* spellInfo);
 void CursesModifyPeriodicTick(Unit* target, Unit* attacker, uint32& damage, SpellInfo const* spellInfo);

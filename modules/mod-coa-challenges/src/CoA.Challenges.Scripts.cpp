@@ -4089,6 +4089,18 @@ namespace CoAChallenges
         }
     };
 
+    class CoAChallengesCurseSpells : public GlobalScript
+    {
+    public:
+        CoAChallengesCurseSpells()
+            : GlobalScript("CoAChallengesCurseSpells", { GLOBALHOOK_ON_LOAD_SPELL_CUSTOM_ATTR }) { }
+
+        void OnLoadSpellCustomAttr(SpellInfo* spellInfo) override
+        {
+            CursesLoadSpellInfo(spellInfo);
+        }
+    };
+
     // Combat rules enforced through UnitScript (Unit::DealDamage / heal /
     // melee-outcome roll): NO_DAMAGE, NO_KILL_BEASTS/HUMANOIDS, NO_HEALING,
     // CANNOT_DODGE_BLOCK_OR_PARRY, CAN_BE_CRITTED_BY_ANY_ABILITY.
@@ -4425,6 +4437,7 @@ void Addmod_coa_challengesScripts()
     new CoAChallenges::CoAChallengesServer();
     new CoAChallenges::CoAChallengesUnit();
     new CoAChallenges::CoAChallengesLoot();
+    new CoAChallenges::CoAChallengesCurseSpells();
     new CoAChallenges::CoAChallengesCommand();
     new CoAChallenges::CoAChallengesMisc();
     new CoAChallenges::CoAChallengesGuild();

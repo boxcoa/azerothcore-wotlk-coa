@@ -3,9 +3,9 @@
   "name": "Cursed!: curse damage ignores Resilient Constitution",
   "contract": [
     "Issue #10788. Sun Clerics carry Resilient Constitution 552011, which halves player-caused damage in the",
-    "core's resilience step; a curse is self-cast, so it counted. Curse damage is dealt directly as a share of",
-    "max health. On level 20 Sun Clerics with the aura, Combustion 901876 deals 70% of max health over its 7",
-    "ticks and Storms deals 40% through two 20% hits of 901846, not the halved 35% and 20%."
+    "core's resilience step; a curse is self-cast, so it counted. Curse spells skip resilience",
+    "(AscensionInheritsResolvedAmount). On level 20 Sun Clerics with the aura, Combustion 901876 deals 70% of max",
+    "health over its 7 ticks and Storms deals 40% through two 20% hits of 901846, not the halved 35% and 20%."
   ],
   "timeout_ms": 300000,
   "location": {
