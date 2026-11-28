@@ -3,10 +3,10 @@
   "name": "Cursed!: Reflection ignores dodged and fully absorbed hits",
   "contract": [
     "Issue #10788. Reflection reads the final damage after the hit roll and absorbs. With Major",
-    "Reflection 901852 on the player, swings the target dodges (dodge fixture 100%) and swings a Power Word:",
-    "Shield 48066 absorbs completely deal no damage, so no 901856 reflection is dealt. A dodged swing that",
-    "reflected would make every swing reflect, so the dodge phase asserts at least one dodge and fewer",
-    "reflections than swings; a rare swing that lands still reflects once (positions and facing recorded)."
+    "Reflection 901852 on the player, each of three single swings against the dodge fixture (100%, set again",
+    "before every swing because the fixture writes m_realDodge and does not survive a dodge recalculation) is",
+    "dodged and reflects nothing; then swings a Power Word: Shield 48066 absorbs completely (its remaining absorb",
+    "goes down) deal no damage and reflect nothing. Positions and facing are recorded around the dodge swings."
   ],
   "timeout_ms": 400000,
   "location": {
@@ -77,32 +77,6 @@
       "stacks": 1
     },
     {
-      "action": "set_combat_avoidance",
-      "actor": "foe",
-      "dodge": 100,
-      "parry": 0
-    },
-    {
-      "action": "snapshot",
-      "actor": "hero",
-      "metric": "melee_dodges_dealt",
-      "save_as": "dodges_0"
-    },
-    {
-      "action": "snapshot",
-      "actor": "hero",
-      "metric": "melee_attack_count",
-      "save_as": "swings_start"
-    },
-    {
-      "action": "snapshot",
-      "actor": "hero",
-      "metric": "spell_damage_count",
-      "spell": 901856,
-      "target": "hero",
-      "save_as": "miss_0"
-    },
-    {
       "action": "snapshot",
       "actor": "hero",
       "metric": "position_x",
@@ -139,11 +113,139 @@
       "save_as": "foe_o_before"
     },
     {
+      "action": "set_combat_avoidance",
+      "actor": "foe",
+      "dodge": 100,
+      "parry": 0
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "melee_dodges_dealt",
+      "save_as": "dodges_1"
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "spell_damage_count",
+      "spell": 901856,
+      "target": "hero",
+      "save_as": "reflections_1"
+    },
+    {
       "action": "attack_until_swings",
       "actor": "hero",
       "target": "foe",
-      "swings": 3,
+      "swings": 1,
       "timeout_ms": 15000
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "melee_dodges_dealt",
+      "relative_to": "dodges_1",
+      "min": 1,
+      "label": "swing 1 is dodged"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_damage_count",
+      "spell": 901856,
+      "target": "hero",
+      "relative_to": "reflections_1",
+      "equals": 0,
+      "label": "dodged swing 1 reflects nothing"
+    },
+    {
+      "action": "set_combat_avoidance",
+      "actor": "foe",
+      "dodge": 100,
+      "parry": 0
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "melee_dodges_dealt",
+      "save_as": "dodges_2"
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "spell_damage_count",
+      "spell": 901856,
+      "target": "hero",
+      "save_as": "reflections_2"
+    },
+    {
+      "action": "attack_until_swings",
+      "actor": "hero",
+      "target": "foe",
+      "swings": 1,
+      "timeout_ms": 15000
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "melee_dodges_dealt",
+      "relative_to": "dodges_2",
+      "min": 1,
+      "label": "swing 2 is dodged"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_damage_count",
+      "spell": 901856,
+      "target": "hero",
+      "relative_to": "reflections_2",
+      "equals": 0,
+      "label": "dodged swing 2 reflects nothing"
+    },
+    {
+      "action": "set_combat_avoidance",
+      "actor": "foe",
+      "dodge": 100,
+      "parry": 0
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "melee_dodges_dealt",
+      "save_as": "dodges_3"
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "spell_damage_count",
+      "spell": 901856,
+      "target": "hero",
+      "save_as": "reflections_3"
+    },
+    {
+      "action": "attack_until_swings",
+      "actor": "hero",
+      "target": "foe",
+      "swings": 1,
+      "timeout_ms": 15000
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "melee_dodges_dealt",
+      "relative_to": "dodges_3",
+      "min": 1,
+      "label": "swing 3 is dodged"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_damage_count",
+      "spell": 901856,
+      "target": "hero",
+      "relative_to": "reflections_3",
+      "equals": 0,
+      "label": "dodged swing 3 reflects nothing"
     },
     {
       "action": "snapshot",
@@ -182,32 +284,6 @@
       "save_as": "foe_o_after"
     },
     {
-      "action": "snapshot",
-      "actor": "hero",
-      "metric": "melee_attack_count",
-      "relative_to": "swings_start",
-      "save_as": "dodge_swings"
-    },
-    {
-      "action": "assert",
-      "actor": "hero",
-      "metric": "melee_dodges_dealt",
-      "relative_to": "dodges_0",
-      "min": 1,
-      "label": "the foe dodges"
-    },
-    {
-      "action": "assert",
-      "actor": "hero",
-      "metric": "spell_damage_count",
-      "spell": 901856,
-      "target": "hero",
-      "relative_to": "miss_0",
-      "ratio_to": "dodge_swings",
-      "max": 0.99,
-      "label": "a dodged swing reflects nothing: fewer reflections than swings"
-    },
-    {
       "action": "set_combat_avoidance",
       "actor": "foe",
       "dodge": 0,
@@ -219,6 +295,14 @@
       "spell": 48066,
       "stacks": 1,
       "caster": "foe"
+    },
+    {
+      "action": "snapshot",
+      "actor": "foe",
+      "metric": "aura_amount",
+      "spell": 48066,
+      "caster": "foe",
+      "save_as": "shield_0"
     },
     {
       "action": "snapshot",
@@ -262,6 +346,16 @@
       "relative_to": "hits_0",
       "equals": 0,
       "label": "the shield absorbs every swing"
+    },
+    {
+      "action": "assert",
+      "actor": "foe",
+      "metric": "aura_amount",
+      "spell": 48066,
+      "caster": "foe",
+      "relative_to": "shield_0",
+      "max": -1,
+      "label": "the shield's remaining absorb went down"
     },
     {
       "action": "assert",
