@@ -149,6 +149,18 @@ namespace CoAChallenges
             return CoACurses::PickCurse(*tier, otherDamage, urand(0, 0xFFFF));
         }
 
+        bool AbsentForDamageNow(Player const* player, CursedState const& state)
+        {
+            if (state.presence == PresenceOverride::Present)
+                return false;
+            if (state.presence == PresenceOverride::Absent)
+                return true;
+            CoACurses::PresenceInput in;
+            in.farTeleport = player->IsBeingTeleportedFar();
+            in.oldestUnansweredMs = state.probes.OldestUnansweredMs(NowMs());
+            return CoACurses::DamageSuppressed(in);
+        }
+
         CoACurses::PresenceInput ReadPresence(Player* player, CursedState const& state)
         {
             CoACurses::PresenceInput in;
@@ -270,7 +282,7 @@ namespace CoAChallenges
                         SendCurseMessage(player, *action.curse, action.remainingMs, false);
                         break;
                     case CoACurses::Event::Remind:
-                        SendCurseMessage(player, *action.curse, action.remainingMs, true);
+                        SendCurseMessage(player, *action.curse, CoACurses::REMINDER_LEAD_MS, true);
                         break;
                     case CoACurses::Event::RequestProof:
                         RequestProof(player, action.lane);
@@ -308,8 +320,15 @@ namespace CoAChallenges
             SpellInfo const* info = sSpellMgr->GetSpellInfo(REFLECTION_DAMAGE_SPELL);
             if (!info || amount <= 0 || !player->IsAlive())
                 return;
+            if (player->IsImmunedToDamage(player, info))
+                return;
             SpellNonMeleeDamage damage(player, player, info, info->GetSchoolMask());
             damage.damage = uint32(amount);
+            DamageInfo mitigation(damage, SPELL_DIRECT_DAMAGE, BASE_ATTACK, 0);
+            Unit::CalcAbsorbResist(mitigation);
+            damage.absorb = mitigation.GetAbsorb();
+            damage.resist = mitigation.GetResist();
+            damage.damage = mitigation.GetDamage();
             Unit::DealDamageMods(player, damage.damage, &damage.absorb);
             player->SendSpellNonMeleeDamageLog(&damage);
             player->DealSpellDamage(&damage, true);
@@ -429,7 +448,7 @@ namespace CoAChallenges
     {
         std::lock_guard<std::mutex> lock(CursesMutex);
         auto it = CursesStates.find(player->GetGUID().GetCounter());
-        return it != CursesStates.end() && it->second.absentForDamage;
+        return it != CursesStates.end() && AbsentForDamageNow(player, it->second);
     }
 
     void CursesModifyDamageTaken(Unit* target, Unit* attacker, int32& damage, SpellInfo const* spellInfo)
@@ -499,17 +518,23 @@ namespace CoAChallenges
                 target.GetName(), spell);
             return false;
         }
-        std::lock_guard<std::mutex> lock(CursesMutex);
-        CursedState* state = FindState(player);
-        if (!state)
+        size_t const index = LaneIndex(CoACurses::LaneOf(curse->tier));
+        bool found = false;
+        {
+            std::lock_guard<std::mutex> lock(CursesMutex);
+            if (CursedState* state = FindState(player))
+            {
+                found = true;
+                state->forced[index] = spell;
+                if (state->lanes[index].phase == CoACurses::Phase::Gap)
+                    state->lanes[index].gapLeftMs = 0;
+            }
+        }
+        if (!found)
         {
             handler->SendErrorMessage("Cursed: '{}' is not on a Cursed! run.", target.GetName());
             return false;
         }
-        size_t const index = LaneIndex(CoACurses::LaneOf(curse->tier));
-        state->forced[index] = spell;
-        if (state->lanes[index].phase == CoACurses::Phase::Gap)
-            state->lanes[index].gapLeftMs = 0;
         handler->PSendSysMessage("Cursed: next {} roll for {} is {}.", index == 0 ? "minor" : "major",
             target.GetName(), spell);
         return true;
@@ -535,9 +560,11 @@ namespace CoAChallenges
             handler->SendErrorMessage("Cursed: player '{}' is not online.", target.GetName());
             return false;
         }
-        std::lock_guard<std::mutex> lock(CursesMutex);
-        CursesStates[player->GetGUID().GetCounter()].presence = wanted;
-        CursesStateCount.store(CursesStates.size(), std::memory_order_relaxed);
+        {
+            std::lock_guard<std::mutex> lock(CursesMutex);
+            CursesStates[player->GetGUID().GetCounter()].presence = wanted;
+            CursesStateCount.store(CursesStates.size(), std::memory_order_relaxed);
+        }
         handler->PSendSysMessage("Cursed: presence for {} is {}.", target.GetName(), mode);
         return true;
     }
@@ -550,37 +577,45 @@ namespace CoAChallenges
             handler->SendErrorMessage("Cursed: player '{}' is not online.", target.GetName());
             return false;
         }
-        std::lock_guard<std::mutex> lock(CursesMutex);
-        CursedState* state = FindState(player);
-        if (!state)
-        {
-            handler->SendErrorMessage("Cursed: '{}' is not on a Cursed! run.", target.GetName());
-            return false;
-        }
-        uint32 counter = 0;
-        if (which == "minor" || which == "major")
-        {
-            CoACurses::LaneClock const& clock = state->lanes[which == "minor" ? 0 : 1];
-            if (!clock.proofCounter)
-            {
-                handler->SendErrorMessage("Cursed: the {} lane has no proof request.", which);
-                return false;
-            }
-            counter = *clock.proofCounter;
-        }
-        else if (which == "unrelated")
-        {
-            counter = 0x7FFFFFFF;
-            for (CoACurses::LaneClock const& clock : state->lanes)
-                if (clock.proofCounter && *clock.proofCounter == counter)
-                    --counter;
-        }
-        else
+        if (which != "minor" && which != "major" && which != "unrelated")
         {
             handler->SendErrorMessage("Cursed: reply must be minor, major or unrelated.");
             return false;
         }
-        ApplyReply(*state, counter);
+        bool found = false;
+        bool requested = true;
+        uint32 counter = 0;
+        {
+            std::lock_guard<std::mutex> lock(CursesMutex);
+            if (CursedState* state = FindState(player))
+            {
+                found = true;
+                if (which == "unrelated")
+                {
+                    counter = 0x7FFFFFFF;
+                    for (CoACurses::LaneClock const& clock : state->lanes)
+                        if (clock.proofCounter && *clock.proofCounter == counter)
+                            --counter;
+                }
+                else if (CoACurses::LaneClock const& clock = state->lanes[which == "minor" ? 0 : 1];
+                    clock.proofCounter)
+                    counter = *clock.proofCounter;
+                else
+                    requested = false;
+                if (requested)
+                    ApplyReply(*state, counter);
+            }
+        }
+        if (!found)
+        {
+            handler->SendErrorMessage("Cursed: '{}' is not on a Cursed! run.", target.GetName());
+            return false;
+        }
+        if (!requested)
+        {
+            handler->SendErrorMessage("Cursed: the {} lane has no proof request.", which);
+            return false;
+        }
         handler->PSendSysMessage("Cursed: reply {} sent for {}.", counter, target.GetName());
         return true;
     }

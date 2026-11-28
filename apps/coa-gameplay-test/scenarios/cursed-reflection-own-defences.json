@@ -1,0 +1,183 @@
+{
+  "schema": 1,
+  "name": "Cursed!: the player's own shield and immunity stop reflected damage",
+  "contract": [
+    "Issue #10788. Reflection's 901856 damage goes through the player's own immunity and absorbs, as",
+    "a normal spell hit does. With Major Reflection 901852 on the player, a Power Word: Shield 48066 on",
+    "the player absorbs the reflected damage and Divine Shield 642 makes the player immune to it."
+  ],
+  "timeout_ms": 400000,
+  "location": {
+    "map": 0,
+    "x": -9617.06,
+    "y": -288.949,
+    "z": 57.3053
+  },
+  "players": [
+    {
+      "id": "hero",
+      "race": 1,
+      "class": 1,
+      "level": 1,
+      "allow_regeneration": false,
+      "melee_hit_rating": 10000,
+      "expertise_rating": 10000
+    },
+    {
+      "id": "foe",
+      "race": 2,
+      "class": 1,
+      "level": 79,
+      "allow_regeneration": false
+    }
+  ],
+  "steps": [
+    {
+      "action": "start_challenge",
+      "actor": "hero",
+      "challenge": 617,
+      "level": 1
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "challenge_start_code",
+      "equals": 0,
+      "within_ms": 3000,
+      "label": "the Cursed! trial activates"
+    },
+    {
+      "action": "set_level",
+      "actor": "hero",
+      "value": 79
+    },
+    {
+      "action": "wait",
+      "ms": 500
+    },
+    {
+      "action": "console",
+      "command": "coa cursed presence Harnessa present"
+    },
+    {
+      "action": "pvp",
+      "actor": "hero",
+      "enabled": true
+    },
+    {
+      "action": "pvp",
+      "actor": "foe",
+      "enabled": true
+    },
+    {
+      "action": "set_combat_avoidance",
+      "actor": "foe",
+      "dodge": 0,
+      "parry": 0
+    },
+    {
+      "action": "set_aura",
+      "actor": "hero",
+      "spell": 901852,
+      "stacks": 1
+    },
+    {
+      "action": "set_aura",
+      "actor": "hero",
+      "spell": 48066,
+      "stacks": 1
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "melee_damage_count",
+      "save_as": "shield_hits_0"
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "spell_damage_count",
+      "spell": 901856,
+      "target": "hero",
+      "save_as": "shield_0"
+    },
+    {
+      "action": "attack_until_swings",
+      "actor": "hero",
+      "target": "foe",
+      "swings": 2,
+      "timeout_ms": 15000
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "melee_damage_count",
+      "relative_to": "shield_hits_0",
+      "min": 1,
+      "label": "the player's swings land"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_damage_count",
+      "spell": 901856,
+      "target": "hero",
+      "relative_to": "shield_0",
+      "equals": 0,
+      "within_ms": 2000,
+      "label": "the player's own shield absorbs the reflected damage"
+    },
+    {
+      "action": "set_aura",
+      "actor": "hero",
+      "spell": 48066,
+      "stacks": 0
+    },
+    {
+      "action": "set_aura",
+      "actor": "hero",
+      "spell": 642,
+      "stacks": 1
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "melee_damage_count",
+      "save_as": "immune_hits_0"
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "spell_damage_count",
+      "spell": 901856,
+      "target": "hero",
+      "save_as": "immune_0"
+    },
+    {
+      "action": "attack_until_swings",
+      "actor": "hero",
+      "target": "foe",
+      "swings": 2,
+      "timeout_ms": 15000
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "melee_damage_count",
+      "relative_to": "immune_hits_0",
+      "min": 1,
+      "label": "the player's swings still land"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_damage_count",
+      "spell": 901856,
+      "target": "hero",
+      "relative_to": "immune_0",
+      "equals": 0,
+      "within_ms": 2000,
+      "label": "an immunity on the player stops the reflected damage"
+    }
+  ]
+}
