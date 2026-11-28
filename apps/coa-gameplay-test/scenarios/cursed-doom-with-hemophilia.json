@@ -3,8 +3,9 @@
   "name": "Cursed!: Doom landing beside Hemophilia leaves a full-health player alive",
   "contract": [
     "Issue #10788. Doom 901866 (75% in one hit after 90 s) and Hemophilia 901827 (12% over 30 s) may",
-    "overlap: 87% stays below the damage cap. A level 20 player starting at full health with",
-    "regeneration off survives both with about 13% health left."
+    "overlap: 87% stays below the damage cap. Doom's hit is measured at 75% and Hemophilia at no more",
+    "than 12% of max health (less if a tick falls in Doom's 1 s immunity), so a level 20 player starting",
+    "at full health with regeneration off survives with at least 13% left."
   ],
   "timeout_ms": 400000,
   "location": {
@@ -109,19 +110,46 @@
       "ms": 40000
     },
     {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "max_health",
+      "save_as": "max"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_damage_total",
+      "spell": 901867,
+      "target": "hero",
+      "ratio_to": "max",
+      "min": 0.74,
+      "max": 0.76,
+      "label": "Doom's hit is 75% of max health"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_damage_total",
+      "spell": 901828,
+      "target": "hero",
+      "ratio_to": "max",
+      "min": 0.01,
+      "max": 0.121,
+      "label": "Hemophilia deals some damage and no more than 12% of max health"
+    },
+    {
       "action": "assert",
       "actor": "hero",
       "metric": "alive",
       "equals": 1,
-      "label": "a player who started full survives Doom with Hemophilia (87% combined)"
+      "label": "a player who started full survives Doom with Hemophilia"
     },
     {
       "action": "assert",
       "actor": "hero",
       "metric": "health_pct",
-      "min": 10,
-      "max": 15,
-      "label": "the combined damage is about 87% of max health"
+      "min": 13,
+      "label": "at least 13% is left: the combined damage never exceeds the 87% worst case"
     }
   ]
 }
