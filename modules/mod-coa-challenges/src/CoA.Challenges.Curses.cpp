@@ -386,8 +386,11 @@ namespace CoAChallenges
             bool const vehicle = !duelist && victim->IsVehicle() && victim->GetCharmer();
             if (vehicle)
                 duelist = victim->GetCharmer()->ToPlayer();
-            if (duelist && duelist->duel && (!vehicle || duelist->duel->IsMounted)
-                && duelist->duel->Opponent == attacker && damage >= health - 1)
+            if (!duelist || !duelist->duel || (vehicle && !duelist->duel->IsMounted) || damage < health - 1)
+                return std::min(damage, health);
+            Player const* opponent = duelist->duel->Opponent;
+            ObjectGuid const controller = vehicle ? attacker->GetCharmerGUID() : attacker->GetCharmerOrOwnerGUID();
+            if (opponent == attacker || (opponent && opponent->GetGUID() == controller))
                 return health - 1;
             return std::min(damage, health);
         }
