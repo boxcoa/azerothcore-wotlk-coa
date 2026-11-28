@@ -373,6 +373,32 @@ namespace CoACurses
         }
     };
 
+    struct HitNote
+    {
+        void const* attacker = nullptr;
+        void const* victim = nullptr;
+        uint32_t share = 0;
+    };
+
+    struct HitNotes
+    {
+        std::vector<HitNote> open;
+
+        void Push(HitNote note)
+        {
+            open.push_back(note);
+        }
+
+        HitNote Pop()
+        {
+            if (open.empty())
+                return {};
+            HitNote const note = open.back();
+            open.pop_back();
+            return note;
+        }
+    };
+
     struct PresenceInput
     {
         bool inWorld = false;

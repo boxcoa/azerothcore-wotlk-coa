@@ -68,14 +68,7 @@ namespace CoAChallenges
         std::atomic<size_t> CursesStateCount = 0;
         thread_local ProofTarget t_proofTarget;
 
-        struct PendingHit
-        {
-            Unit const* attacker = nullptr;
-            Unit const* victim = nullptr;
-            uint32 share = 0;
-        };
-
-        thread_local PendingHit t_pendingHit;
+        thread_local CoACurses::HitNotes t_hitNotes;
 
         size_t LaneIndex(CoACurses::Lane lane)
         {
@@ -506,26 +499,22 @@ namespace CoAChallenges
 
     void CursesOnDamageDealt(Unit* attacker, Unit* victim, uint32 damage, DamageEffectType type)
     {
-        t_pendingHit = {};
-        if (!damage || !attacker || !victim || attacker == victim || !attacker->IsPlayer())
-            return;
-        if (type != DIRECT_DAMAGE && type != SPELL_DIRECT_DAMAGE)
-            return;
-        if (CursesStateCount.load(std::memory_order_relaxed) == 0)
-            return;
-        Player* player = attacker->ToPlayer();
         uint32 share = 0;
-        for (auto const& [spell, pct] : REFLECTION_SHARES)
-            if (player->GetAura(spell, player->GetGUID()))
-                share = std::max(share, pct);
-        if (share)
-            t_pendingHit = { attacker, victim, share };
+        if (damage && attacker && victim && attacker != victim && attacker->IsPlayer()
+            && (type == DIRECT_DAMAGE || type == SPELL_DIRECT_DAMAGE)
+            && CursesStateCount.load(std::memory_order_relaxed) != 0)
+        {
+            Player* player = attacker->ToPlayer();
+            for (auto const& [spell, pct] : REFLECTION_SHARES)
+                if (player->GetAura(spell, player->GetGUID()))
+                    share = std::max(share, pct);
+        }
+        t_hitNotes.Push({ attacker, victim, share });
     }
 
     void CursesOnDamageApplied(Unit* attacker, Unit* victim, uint32 damage)
     {
-        PendingHit const hit = t_pendingHit;
-        t_pendingHit = {};
+        CoACurses::HitNote const hit = t_hitNotes.Pop();
         if (!hit.share || hit.attacker != attacker || hit.victim != victim || !damage)
             return;
         Player* player = attacker->ToPlayer();

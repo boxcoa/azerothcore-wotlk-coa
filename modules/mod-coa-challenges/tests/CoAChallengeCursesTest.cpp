@@ -413,3 +413,27 @@ TEST(CoACurses, Presence_TaxiAndVehiclePauseButDoNotSuppress)
     EXPECT_FALSE(CountdownRuns(in));
     EXPECT_TRUE(DamageSuppressed(in));
 }
+
+TEST(CoACurses, Reflection_NestedDamageKeepsTheOuterHit)
+{
+    int const player = 0;
+    int const emperor = 0;
+    int const twin = 0;
+    HitNotes notes;
+    notes.Push({ &player, &emperor, 75 });
+    notes.Push({ &emperor, &twin, 0 });
+
+    HitNote const inner = notes.Pop();
+    EXPECT_EQ(inner.attacker, &emperor);
+    EXPECT_EQ(inner.victim, &twin);
+    EXPECT_EQ(inner.share, 0u);
+
+    HitNote const outer = notes.Pop();
+    EXPECT_EQ(outer.attacker, &player);
+    EXPECT_EQ(outer.victim, &emperor);
+    EXPECT_EQ(outer.share, 75u);
+
+    HitNote const none = notes.Pop();
+    EXPECT_EQ(none.attacker, nullptr);
+    EXPECT_EQ(none.share, 0u);
+}
