@@ -117,14 +117,16 @@ namespace CoAChallenges
         {
             for (size_t index = 0; index < state.lanes.size(); ++index)
                 state.lanes[index].StartGap(RandomGapMs());
-            for (bool const parentsOnly : { true, false })
+            for (int pass = 0; pass < 3; ++pass)
             {
                 for (CoACurses::Curse const& curse : CoACurses::Pool())
                 {
                     CoACurses::LaneClock& clock = state.lanes[LaneIndex(CoACurses::LaneOf(curse.tier))];
                     if (clock.phase != CoACurses::Phase::Gap)
                         continue;
-                    bool const owned = parentsOnly ? player->GetAura(curse.spell, player->GetGUID()) != nullptr
+                    if (pass == 0 && !curse.helpers[0])
+                        continue;
+                    bool const owned = pass < 2 ? player->GetAura(curse.spell, player->GetGUID()) != nullptr
                         : HasOwnedFamilyAura(player, curse);
                     if (owned)
                     {
