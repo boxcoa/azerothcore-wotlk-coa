@@ -12,6 +12,12 @@ namespace CoAChallenges
         constexpr uint32 CURSED_TRIAL_AURA = 943601;
         constexpr uint32 CURSED_CHALLENGE = 617;
         constexpr uint32 CURSED_PRESTIGE_CHALLENGE = 618;
+        constexpr uint32 REFLECTION_DAMAGE_SPELL = 901856;
+        constexpr std::array<std::pair<uint32, uint32>, 3> REFLECTION_SHARES = {{
+            { 901852, 75 },
+            { 901853, 50 },
+            { 901854, 25 },
+        }};
 
         enum class PresenceOverride : uint8
         {
@@ -274,6 +280,35 @@ namespace CoAChallenges
             }
         }
 
+        bool IsCurseFamilySpell(uint32 spell)
+        {
+            for (CoACurses::Curse const& curse : CoACurses::Pool())
+                if (CoACurses::InFamily(curse, spell))
+                    return true;
+            return false;
+        }
+
+        bool SuppressCurseDamage(Unit* target, Unit* attacker, SpellInfo const* spellInfo)
+        {
+            if (!target || target != attacker || !spellInfo || !target->IsPlayer())
+                return false;
+            if (CursesStateCount.load(std::memory_order_relaxed) == 0 || !IsCurseFamilySpell(spellInfo->Id))
+                return false;
+            return CursesPlayerAbsent(target->ToPlayer());
+        }
+
+        void DealReflection(Player* player, int32 amount)
+        {
+            SpellInfo const* info = sSpellMgr->GetSpellInfo(REFLECTION_DAMAGE_SPELL);
+            if (!info || amount <= 0 || !player->IsAlive())
+                return;
+            SpellNonMeleeDamage damage(player, player, info, info->GetSchoolMask());
+            damage.damage = uint32(amount);
+            Unit::DealDamageMods(player, damage.damage, &damage.absorb);
+            player->SendSpellNonMeleeDamageLog(&damage);
+            player->DealSpellDamage(&damage, true);
+        }
+
         CursedState* FindState(Player* player)
         {
             auto it = CursesStates.find(player->GetGUID().GetCounter());
@@ -295,6 +330,7 @@ namespace CoAChallenges
         }
 
         std::vector<CurseAction> actions;
+        std::vector<int32> reflections;
         {
             std::lock_guard<std::mutex> lock(CursesMutex);
             CursedState& state = CursesStates[guid];
@@ -332,8 +368,13 @@ namespace CoAChallenges
                 Append(actions, index, events, clock);
             }
             state.wasPresent = present;
+            reflections.swap(state.reflections);
+            if (state.absentForDamage)
+                reflections.clear();
         }
         Execute(player, actions);
+        for (int32 amount : reflections)
+            DealReflection(player, amount);
     }
 
     void CursesOnLogin(Player* player)
@@ -383,6 +424,41 @@ namespace CoAChallenges
         std::lock_guard<std::mutex> lock(CursesMutex);
         auto it = CursesStates.find(player->GetGUID().GetCounter());
         return it != CursesStates.end() && it->second.absentForDamage;
+    }
+
+    void CursesModifyDamageTaken(Unit* target, Unit* attacker, int32& damage, SpellInfo const* spellInfo)
+    {
+        if (damage > 0 && SuppressCurseDamage(target, attacker, spellInfo))
+            damage = 0;
+    }
+
+    void CursesModifyPeriodicTick(Unit* target, Unit* attacker, uint32& damage, SpellInfo const* spellInfo)
+    {
+        if (damage > 0 && SuppressCurseDamage(target, attacker, spellInfo))
+            damage = 0;
+    }
+
+    void CursesOnDamageDealt(Unit* attacker, Unit* victim, uint32 damage, DamageEffectType type)
+    {
+        if (!damage || !attacker || !victim || attacker == victim || !attacker->IsPlayer())
+            return;
+        if (type != DIRECT_DAMAGE && type != SPELL_DIRECT_DAMAGE)
+            return;
+        if (CursesStateCount.load(std::memory_order_relaxed) == 0)
+            return;
+        Player* player = attacker->ToPlayer();
+        uint32 share = 0;
+        for (auto const& [spell, pct] : REFLECTION_SHARES)
+            if (player->GetAura(spell, player->GetGUID()))
+                share = std::max(share, pct);
+        if (!share)
+            return;
+        int32 const amount = int32(uint64(damage) * share / 100);
+        if (amount <= 0)
+            return;
+        std::lock_guard<std::mutex> lock(CursesMutex);
+        if (CursedState* state = FindState(player))
+            state->reflections.push_back(amount);
     }
 
     bool HandleCoACursedForceCommand(ChatHandler* handler, PlayerIdentifier target, uint32 spell)

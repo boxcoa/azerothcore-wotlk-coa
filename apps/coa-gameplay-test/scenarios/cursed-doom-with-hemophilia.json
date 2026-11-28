@@ -1,0 +1,127 @@
+{
+  "schema": 1,
+  "name": "Cursed!: Doom landing beside Hemophilia leaves a full-health player alive",
+  "contract": [
+    "Issue #10788. Doom 901866 (75% in one hit after 90 s) and Hemophilia 901827 (12% over 30 s) may",
+    "overlap: 87% stays below the damage cap. A level 20 player starting at full health with",
+    "regeneration off survives both with about 13% health left."
+  ],
+  "timeout_ms": 400000,
+  "location": {
+    "map": 0,
+    "x": -9617.06,
+    "y": -288.949,
+    "z": 57.3053
+  },
+  "players": [
+    {
+      "id": "hero",
+      "race": 1,
+      "class": 1,
+      "level": 1,
+      "allow_regeneration": false
+    }
+  ],
+  "steps": [
+    {
+      "action": "start_challenge",
+      "actor": "hero",
+      "challenge": 617,
+      "level": 1
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "challenge_start_code",
+      "equals": 0,
+      "within_ms": 3000,
+      "label": "the Cursed! trial activates"
+    },
+    {
+      "action": "set_level",
+      "actor": "hero",
+      "value": 20
+    },
+    {
+      "action": "wait",
+      "ms": 500
+    },
+    {
+      "action": "console",
+      "command": "coa cursed presence Harnessa present"
+    },
+    {
+      "action": "console",
+      "command": "coa cursed force Harnessa 901866"
+    },
+    {
+      "action": "wait",
+      "ms": 16000
+    },
+    {
+      "action": "console",
+      "command": "coa cursed reply Harnessa major"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "aura",
+      "spell": 901866,
+      "equals": 1,
+      "within_ms": 2000,
+      "label": "Doom lands"
+    },
+    {
+      "action": "wait",
+      "ms": 55000
+    },
+    {
+      "action": "console",
+      "command": "coa cursed force Harnessa 901827"
+    },
+    {
+      "action": "wait",
+      "ms": 5500
+    },
+    {
+      "action": "console",
+      "command": "coa cursed reply Harnessa minor"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "aura",
+      "spell": 901827,
+      "equals": 1,
+      "within_ms": 6000,
+      "label": "Hemophilia lands while Doom is counting down"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "aura",
+      "spell": 901866,
+      "equals": 1,
+      "label": "Doom is still counting down"
+    },
+    {
+      "action": "wait",
+      "ms": 40000
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "alive",
+      "equals": 1,
+      "label": "a player who started full survives Doom with Hemophilia (87% combined)"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "health_pct",
+      "min": 10,
+      "max": 15,
+      "label": "the combined damage is about 87% of max health"
+    }
+  ]
+}

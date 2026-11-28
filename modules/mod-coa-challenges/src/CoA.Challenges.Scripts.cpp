@@ -4155,7 +4155,26 @@ namespace CoAChallenges
         CoAChallengesUnit() : UnitScript("CoAChallengesUnit", true,
             { UNITHOOK_ON_DAMAGE, UNITHOOK_ON_HEAL, UNITHOOK_MODIFY_HEAL_RECEIVED, UNITHOOK_ON_BEFORE_ROLL_MELEE_OUTCOME_AGAINST, UNITHOOK_CAN_UNIT_ATTACK,
               UNITHOOK_ON_UNIT_EXIT_COMBAT, UNITHOOK_SHOULD_TRACK_VALUES_UPDATE_POS_BY_INDEX,
-              UNITHOOK_ON_PATCH_VALUES_UPDATE, UNITHOOK_ON_UNIT_DEATH }) { }
+              UNITHOOK_ON_PATCH_VALUES_UPDATE, UNITHOOK_ON_UNIT_DEATH, UNITHOOK_MODIFY_SPELL_DAMAGE_TAKEN,
+              UNITHOOK_MODIFY_PERIODIC_DAMAGE_AURAS_TICK }) { }
+
+        void ModifySpellDamageTaken(Unit* target, Unit* attacker, int32& damage, SpellInfo const* spellInfo) override
+        {
+            CursesModifyDamageTaken(target, attacker, damage, spellInfo);
+        }
+
+        void ModifyPeriodicDamageAurasTick(Unit* target, Unit* attacker, uint32& damage,
+            SpellInfo const* spellInfo) override
+        {
+            CursesModifyPeriodicTick(target, attacker, damage, spellInfo);
+        }
+
+        uint32 DealDamage(Unit* attacker, Unit* victim, uint32 damage, DamageEffectType damagetype,
+            std::optional<uint32>* /*scriptHealthLeechDamage*/) override
+        {
+            CursesOnDamageDealt(attacker, victim, damage, damagetype);
+            return damage;
+        }
 
         void OnUnitExitCombat(Unit* unit) override
         {

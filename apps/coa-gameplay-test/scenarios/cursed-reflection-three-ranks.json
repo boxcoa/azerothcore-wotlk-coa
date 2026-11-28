@@ -1,0 +1,454 @@
+{
+  "schema": 1,
+  "name": "Cursed!: Reflection returns its share of the damage the player deals, never periodic damage",
+  "contract": [
+    "Issue #10788. Major, Medium and Minor Reflection (901852/901853/901854) deal 75%, 50% and 25% of",
+    "the direct damage the player deals to another unit back to the player as 901856. The target still",
+    "takes the full damage, the reflected hit does not reflect again (the share stays exact), a",
+    "direct spell hit (Heroic Strike 78) is reflected, and Rend 772's periodic damage is not. Ratings",
+    "and zero avoidance make every swing land; level 79 keeps the trial below its completing level."
+  ],
+  "timeout_ms": 400000,
+  "location": {
+    "map": 0,
+    "x": -9617.06,
+    "y": -288.949,
+    "z": 57.3053
+  },
+  "players": [
+    {
+      "id": "hero",
+      "race": 1,
+      "class": 1,
+      "level": 1,
+      "allow_regeneration": false,
+      "melee_hit_rating": 10000,
+      "expertise_rating": 10000
+    },
+    {
+      "id": "foe",
+      "race": 2,
+      "class": 1,
+      "level": 79,
+      "allow_regeneration": false
+    }
+  ],
+  "steps": [
+    {
+      "action": "start_challenge",
+      "actor": "hero",
+      "challenge": 617,
+      "level": 1
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "challenge_start_code",
+      "equals": 0,
+      "within_ms": 3000,
+      "label": "the Cursed! trial activates"
+    },
+    {
+      "action": "set_level",
+      "actor": "hero",
+      "value": 79
+    },
+    {
+      "action": "wait",
+      "ms": 500
+    },
+    {
+      "action": "console",
+      "command": "coa cursed presence Harnessa present"
+    },
+    {
+      "action": "pvp",
+      "actor": "hero",
+      "enabled": true
+    },
+    {
+      "action": "pvp",
+      "actor": "foe",
+      "enabled": true
+    },
+    {
+      "action": "set_combat_avoidance",
+      "actor": "foe",
+      "dodge": 0,
+      "parry": 0
+    },
+    {
+      "action": "set_aura",
+      "actor": "hero",
+      "spell": 901852,
+      "stacks": 1
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "melee_damage_total",
+      "save_as": "dealt_major_0"
+    },
+    {
+      "action": "snapshot",
+      "actor": "foe",
+      "metric": "health",
+      "save_as": "foe_major_0"
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "spell_damage_total",
+      "spell": 901856,
+      "target": "hero",
+      "save_as": "reflect_major_0"
+    },
+    {
+      "action": "attack_until_swings",
+      "actor": "hero",
+      "target": "foe",
+      "swings": 3,
+      "timeout_ms": 15000
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "melee_damage_total",
+      "relative_to": "dealt_major_0",
+      "save_as": "dealt_major"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "melee_damage_total",
+      "relative_to": "dealt_major_0",
+      "min": 1,
+      "label": "major: the melee swings land"
+    },
+    {
+      "action": "assert",
+      "actor": "foe",
+      "metric": "health",
+      "relative_to": "foe_major_0",
+      "ratio_to": "dealt_major",
+      "min": -1.001,
+      "max": -0.999,
+      "label": "major: the target takes the full melee damage"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_damage_total",
+      "spell": 901856,
+      "target": "hero",
+      "relative_to": "reflect_major_0",
+      "ratio_to": "dealt_major",
+      "min": 0.73,
+      "max": 0.755,
+      "within_ms": 2000,
+      "label": "major: the player takes 75% of the melee damage dealt, and no more"
+    },
+    {
+      "action": "set_aura",
+      "actor": "hero",
+      "spell": 901852,
+      "stacks": 0
+    },
+    {
+      "action": "wait",
+      "ms": 500
+    },
+    {
+      "action": "set_aura",
+      "actor": "hero",
+      "spell": 901853,
+      "stacks": 1
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "melee_damage_total",
+      "save_as": "dealt_medium_0"
+    },
+    {
+      "action": "snapshot",
+      "actor": "foe",
+      "metric": "health",
+      "save_as": "foe_medium_0"
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "spell_damage_total",
+      "spell": 901856,
+      "target": "hero",
+      "save_as": "reflect_medium_0"
+    },
+    {
+      "action": "attack_until_swings",
+      "actor": "hero",
+      "target": "foe",
+      "swings": 3,
+      "timeout_ms": 15000
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "melee_damage_total",
+      "relative_to": "dealt_medium_0",
+      "save_as": "dealt_medium"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "melee_damage_total",
+      "relative_to": "dealt_medium_0",
+      "min": 1,
+      "label": "medium: the melee swings land"
+    },
+    {
+      "action": "assert",
+      "actor": "foe",
+      "metric": "health",
+      "relative_to": "foe_medium_0",
+      "ratio_to": "dealt_medium",
+      "min": -1.001,
+      "max": -0.999,
+      "label": "medium: the target takes the full melee damage"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_damage_total",
+      "spell": 901856,
+      "target": "hero",
+      "relative_to": "reflect_medium_0",
+      "ratio_to": "dealt_medium",
+      "min": 0.48,
+      "max": 0.505,
+      "within_ms": 2000,
+      "label": "medium: the player takes 50% of the melee damage dealt, and no more"
+    },
+    {
+      "action": "set_aura",
+      "actor": "hero",
+      "spell": 901853,
+      "stacks": 0
+    },
+    {
+      "action": "wait",
+      "ms": 500
+    },
+    {
+      "action": "set_aura",
+      "actor": "hero",
+      "spell": 901854,
+      "stacks": 1
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "melee_damage_total",
+      "save_as": "dealt_minor_0"
+    },
+    {
+      "action": "snapshot",
+      "actor": "foe",
+      "metric": "health",
+      "save_as": "foe_minor_0"
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "spell_damage_total",
+      "spell": 901856,
+      "target": "hero",
+      "save_as": "reflect_minor_0"
+    },
+    {
+      "action": "attack_until_swings",
+      "actor": "hero",
+      "target": "foe",
+      "swings": 3,
+      "timeout_ms": 15000
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "melee_damage_total",
+      "relative_to": "dealt_minor_0",
+      "save_as": "dealt_minor"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "melee_damage_total",
+      "relative_to": "dealt_minor_0",
+      "min": 1,
+      "label": "minor: the melee swings land"
+    },
+    {
+      "action": "assert",
+      "actor": "foe",
+      "metric": "health",
+      "relative_to": "foe_minor_0",
+      "ratio_to": "dealt_minor",
+      "min": -1.001,
+      "max": -0.999,
+      "label": "minor: the target takes the full melee damage"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_damage_total",
+      "spell": 901856,
+      "target": "hero",
+      "relative_to": "reflect_minor_0",
+      "ratio_to": "dealt_minor",
+      "min": 0.23,
+      "max": 0.255,
+      "within_ms": 2000,
+      "label": "minor: the player takes 25% of the melee damage dealt, and no more"
+    },
+    {
+      "action": "set_aura",
+      "actor": "hero",
+      "spell": 901854,
+      "stacks": 0
+    },
+    {
+      "action": "wait",
+      "ms": 500
+    },
+    {
+      "action": "set_aura",
+      "actor": "hero",
+      "spell": 901852,
+      "stacks": 1
+    },
+    {
+      "action": "learn",
+      "actor": "hero",
+      "spell": 78
+    },
+    {
+      "action": "set_power",
+      "actor": "hero",
+      "power": 1,
+      "value": 1000
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "spell_damage_total",
+      "spell": 78,
+      "target": "foe",
+      "save_as": "hs_0"
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "spell_damage_total",
+      "spell": 901856,
+      "target": "hero",
+      "save_as": "reflect_hs_0"
+    },
+    {
+      "action": "cast",
+      "actor": "hero",
+      "spell": 78,
+      "target": "foe"
+    },
+    {
+      "action": "attack_until_swings",
+      "actor": "hero",
+      "target": "foe",
+      "swings": 1,
+      "timeout_ms": 10000
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "spell_damage_total",
+      "spell": 78,
+      "target": "foe",
+      "relative_to": "hs_0",
+      "save_as": "hs"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_damage_total",
+      "spell": 78,
+      "target": "foe",
+      "relative_to": "hs_0",
+      "min": 1,
+      "label": "Heroic Strike lands as a spell hit"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_damage_total",
+      "spell": 901856,
+      "target": "hero",
+      "relative_to": "reflect_hs_0",
+      "ratio_to": "hs",
+      "min": 0.73,
+      "max": 1.0,
+      "within_ms": 2000,
+      "label": "the spell hit is reflected at 75% (the swing's own melee share may add to it)"
+    },
+    {
+      "action": "learn",
+      "actor": "hero",
+      "spell": 772
+    },
+    {
+      "action": "set_power",
+      "actor": "hero",
+      "power": 1,
+      "value": 1000
+    },
+    {
+      "action": "wait",
+      "ms": 2000
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "spell_damage_total",
+      "spell": 901856,
+      "target": "hero",
+      "save_as": "reflect_dot_0"
+    },
+    {
+      "action": "cast",
+      "actor": "hero",
+      "spell": 772,
+      "target": "foe"
+    },
+    {
+      "action": "wait",
+      "ms": 10000
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_damage_total",
+      "spell": 772,
+      "target": "foe",
+      "min": 1,
+      "label": "Rend's periodic damage lands"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_damage_total",
+      "spell": 901856,
+      "target": "hero",
+      "relative_to": "reflect_dot_0",
+      "equals": 0,
+      "label": "periodic damage is not reflected"
+    }
+  ]
+}
