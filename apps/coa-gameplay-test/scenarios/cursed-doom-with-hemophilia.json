@@ -68,8 +68,8 @@
       "metric": "aura",
       "spell": 901866,
       "equals": 1,
-      "within_ms": 2000,
-      "label": "Doom lands"
+      "within_ms": 6000,
+      "label": "Doom lands 5 s after its reminder"
     },
     {
       "action": "wait",

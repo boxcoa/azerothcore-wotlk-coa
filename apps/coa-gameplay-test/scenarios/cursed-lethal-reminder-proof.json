@@ -141,7 +141,7 @@
     },
     {
       "action": "wait",
-      "ms": 2500
+      "ms": 3700
     },
     {
       "action": "assert",
@@ -149,7 +149,7 @@
       "metric": "aura",
       "spell": 901841,
       "equals": 0,
-      "label": "an early reply does not shorten the 5 s after the reminder"
+      "label": "a reply 1 s after the reminder does not shorten the 5 s window (checked at 14.7 s)"
     },
     {
       "action": "assert",
@@ -158,7 +158,7 @@
       "spell": 901841,
       "equals": 1,
       "label": "Narcolepsy lands once that window has run",
-      "within_ms": 4000
+      "within_ms": 1500
     }
   ]
 }

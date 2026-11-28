@@ -2,9 +2,10 @@
   "schema": 1,
   "name": "Cursed!: each lane's curse needs the reply to its own proof request",
   "contract": [
-    "Issue #10788. Weakness 901802 (minor) and Narcolepsy 901841 (major) reach their reminders together.",
-    "An unrelated time-sync reply releases neither; the minor reply releases only Weakness and the major",
-    "reply only Narcolepsy, each no earlier than 5 s after its own reminder."
+    "Issue #10788. Narcolepsy 901841 (major, forced first) and Weakness 901802 (minor, forced 5 s later)",
+    "send their reminders about 10 s after the first force. An unrelated reply releases neither; the minor",
+    "reply, sent at once, still waits the full 5 s after its reminder and releases only Weakness; the",
+    "major lane stays held until its own reply. Same-update sends are covered by the unit tests."
   ],
   "timeout_ms": 300000,
   "location": {
@@ -72,15 +73,19 @@
     },
     {
       "action": "wait",
-      "ms": 6000
+      "ms": 5500
     },
     {
       "action": "console",
       "command": "coa cursed reply Harnessa unrelated"
     },
     {
+      "action": "console",
+      "command": "coa cursed reply Harnessa minor"
+    },
+    {
       "action": "wait",
-      "ms": 6000
+      "ms": 4200
     },
     {
       "action": "assert",
@@ -88,7 +93,7 @@
       "metric": "aura",
       "spell": 901802,
       "equals": 0,
-      "label": "an unrelated reply does not release Weakness"
+      "label": "the minor reply does not skip the 5 s window (checked at 14.7 s)"
     },
     {
       "action": "assert",
@@ -99,17 +104,13 @@
       "label": "an unrelated reply does not release Narcolepsy"
     },
     {
-      "action": "console",
-      "command": "coa cursed reply Harnessa minor"
-    },
-    {
       "action": "assert",
       "actor": "hero",
       "metric": "aura",
       "spell": 901802,
       "equals": 1,
-      "label": "the minor reply releases Weakness",
-      "within_ms": 2000
+      "label": "Weakness lands once its window has run",
+      "within_ms": 1500
     },
     {
       "action": "assert",
@@ -118,6 +119,18 @@
       "spell": 901841,
       "equals": 0,
       "label": "the minor reply does not release Narcolepsy"
+    },
+    {
+      "action": "wait",
+      "ms": 2000
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "aura",
+      "spell": 901841,
+      "equals": 0,
+      "label": "Narcolepsy stays held without its own reply"
     },
     {
       "action": "console",
@@ -130,7 +143,7 @@
       "spell": 901841,
       "equals": 1,
       "label": "the major reply releases Narcolepsy",
-      "within_ms": 2000
+      "within_ms": 1000
     }
   ]
 }
