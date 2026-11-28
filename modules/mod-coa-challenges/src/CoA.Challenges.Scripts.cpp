@@ -4299,6 +4299,12 @@ namespace CoAChallenges
 
         void OnDamage(Unit* attacker, Unit* victim, uint32& damage) override
         {
+            ApplyDamageRules(attacker, victim, damage);
+            CursesOnDamageApplied(attacker, victim, damage);
+        }
+
+        void ApplyDamageRules(Unit* attacker, Unit* victim, uint32& damage)
+        {
             if (!attacker || !victim || !damage)
                 return;
             // Resolve the controlling player: a pet/guardian must not be able to

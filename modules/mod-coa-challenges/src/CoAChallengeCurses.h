@@ -339,7 +339,14 @@ namespace CoACurses
 
         void OnRequestSent(uint32_t counter, uint64_t nowMs)
         {
+            if (counter == 0)
+                outstanding.clear();
             outstanding.emplace_back(counter, nowMs);
+        }
+
+        bool DeadlinePassed(uint64_t nowMs) const
+        {
+            return OldestUnansweredMs(nowMs) >= SILENCE_MS;
         }
 
         bool OnReply(uint32_t counter)

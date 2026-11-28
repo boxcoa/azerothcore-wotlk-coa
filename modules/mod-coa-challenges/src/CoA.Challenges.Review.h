@@ -407,6 +407,7 @@ bool CursesPlayerAbsent(Player const* player);
 void CursesModifyDamageTaken(Unit* target, Unit* attacker, int32& damage, SpellInfo const* spellInfo);
 void CursesModifyPeriodicTick(Unit* target, Unit* attacker, uint32& damage, SpellInfo const* spellInfo);
 void CursesOnDamageDealt(Unit* attacker, Unit* victim, uint32 damage, DamageEffectType type);
+void CursesOnDamageApplied(Unit* attacker, Unit* victim, uint32 damage);
 void CursesOnSpellCast(Unit* caster, SpellInfo const* spellInfo);
 bool HandleCoACursedForceCommand(ChatHandler* handler, Acore::ChatCommands::PlayerIdentifier target, uint32 spell);
 bool HandleCoACursedPresenceCommand(ChatHandler* handler, Acore::ChatCommands::PlayerIdentifier target,

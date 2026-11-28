@@ -368,6 +368,31 @@ TEST(CoACurses, Probe_SameTimestampRepliesRetireBySendOrder)
     EXPECT_TRUE(probes.outstanding.empty());
 }
 
+TEST(CoACurses, Probe_CounterZeroStartsAFreshSequence)
+{
+    ProbeTracker probes;
+    probes.OnRequestSent(7, 0);
+    probes.OnRequestSent(8, 4000);
+    probes.OnRequestSent(0, 6000);
+    ASSERT_EQ(probes.outstanding.size(), 1u);
+    EXPECT_EQ(probes.outstanding.front().first, 0u);
+    EXPECT_EQ(probes.OldestUnansweredMs(15999), 9999u);
+    EXPECT_FALSE(probes.DeadlinePassed(15999));
+    EXPECT_TRUE(probes.DeadlinePassed(16000));
+    EXPECT_TRUE(probes.OnReply(0));
+    EXPECT_TRUE(probes.outstanding.empty());
+}
+
+TEST(CoACurses, Probe_LateReplyIsSeenAsAMissedDeadline)
+{
+    ProbeTracker probes;
+    probes.OnRequestSent(3, 0);
+    EXPECT_FALSE(probes.DeadlinePassed(9980));
+    EXPECT_TRUE(probes.DeadlinePassed(10030));
+    EXPECT_TRUE(probes.OnReply(3));
+    EXPECT_FALSE(probes.DeadlinePassed(10030));
+}
+
 TEST(CoACurses, Presence_TaxiAndVehiclePauseButDoNotSuppress)
 {
     PresenceInput in;

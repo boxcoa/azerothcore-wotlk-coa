@@ -68,6 +68,15 @@ namespace CoAChallenges
         std::atomic<size_t> CursesStateCount = 0;
         thread_local ProofTarget t_proofTarget;
 
+        struct PendingHit
+        {
+            Unit const* attacker = nullptr;
+            Unit const* victim = nullptr;
+            uint32 share = 0;
+        };
+
+        thread_local PendingHit t_pendingHit;
+
         size_t LaneIndex(CoACurses::Lane lane)
         {
             return lane == CoACurses::Lane::Minor ? 0 : 1;
@@ -202,6 +211,8 @@ namespace CoAChallenges
 
         void ApplyReply(CursedState& state, uint32 counter)
         {
+            if (state.probes.DeadlinePassed(NowMs()))
+                state.wasPresent = false;
             state.probes.OnReply(counter);
             for (CoACurses::LaneClock& clock : state.lanes)
                 clock.OnProofReply(counter);
@@ -385,7 +396,6 @@ namespace CoAChallenges
                 state.session = player->GetSession();
                 state.loginReady = false;
                 state.wasPresent = false;
-                state.probes.outstanding.clear();
             }
             if (state.mapId != player->GetMapId() || state.instanceId != player->GetInstanceId())
             {
@@ -440,7 +450,6 @@ namespace CoAChallenges
         CursesStateCount.store(CursesStates.size(), std::memory_order_relaxed);
         state.loginReady = false;
         state.wasPresent = false;
-        state.probes.outstanding.clear();
         state.session = player->GetSession();
     }
 
@@ -497,6 +506,7 @@ namespace CoAChallenges
 
     void CursesOnDamageDealt(Unit* attacker, Unit* victim, uint32 damage, DamageEffectType type)
     {
+        t_pendingHit = {};
         if (!damage || !attacker || !victim || attacker == victim || !attacker->IsPlayer())
             return;
         if (type != DIRECT_DAMAGE && type != SPELL_DIRECT_DAMAGE)
@@ -508,13 +518,22 @@ namespace CoAChallenges
         for (auto const& [spell, pct] : REFLECTION_SHARES)
             if (player->GetAura(spell, player->GetGUID()))
                 share = std::max(share, pct);
-        if (!share)
+        if (share)
+            t_pendingHit = { attacker, victim, share };
+    }
+
+    void CursesOnDamageApplied(Unit* attacker, Unit* victim, uint32 damage)
+    {
+        PendingHit const hit = t_pendingHit;
+        t_pendingHit = {};
+        if (!hit.share || hit.attacker != attacker || hit.victim != victim || !damage)
             return;
+        Player* player = attacker->ToPlayer();
         uint32 dealt = std::min<uint32>(damage, victim->GetHealth());
         if (Player const* target = victim->ToPlayer())
             if (target->duel && target->duel->Opponent == player && damage >= victim->GetHealth() && dealt)
                 dealt = victim->GetHealth() - 1;
-        int32 const amount = int32(uint64(dealt) * share / 100);
+        int32 const amount = int32(uint64(dealt) * hit.share / 100);
         if (amount <= 0)
             return;
         std::lock_guard<std::mutex> lock(CursesMutex);
