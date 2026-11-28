@@ -202,6 +202,18 @@ namespace CoAChallenges
                     actions.push_back({ LaneAt(index), event, clock.curse, clock.remainingMs });
         }
 
+        void NoteSession(CursedState& state, WorldSession const* session)
+        {
+            if (state.session == session)
+                return;
+            bool const known = state.session != nullptr;
+            state.session = session;
+            if (!known)
+                return;
+            state.loginReady = false;
+            state.wasPresent = false;
+        }
+
         uint64 ReceivedMs(WorldPacket const& packet)
         {
             uint64 const now = NowMs();
@@ -391,15 +403,8 @@ namespace CoAChallenges
                 InitialiseLanes(player, state);
                 state.mapId = player->GetMapId();
                 state.instanceId = player->GetInstanceId();
-                if (!state.session)
-                    state.session = player->GetSession();
             }
-            if (state.session != player->GetSession())
-            {
-                state.session = player->GetSession();
-                state.loginReady = false;
-                state.wasPresent = false;
-            }
+            NoteSession(state, player->GetSession());
             if (state.mapId != player->GetMapId() || state.instanceId != player->GetInstanceId())
             {
                 state.mapId = player->GetMapId();
@@ -467,6 +472,7 @@ namespace CoAChallenges
         auto it = CursesStates.find(guid);
         if (it == CursesStates.end())
             return;
+        NoteSession(it->second, session);
         it->second.probes.OnRequestSent(counter, NowMs());
         if (t_proofTarget.active && t_proofTarget.guid == guid)
             it->second.lanes[LaneIndex(t_proofTarget.lane)].OnProofSent(counter);
@@ -483,6 +489,7 @@ namespace CoAChallenges
         auto it = CursesStates.find(session->GetPlayer()->GetGUID().GetCounter());
         if (it == CursesStates.end())
             return;
+        NoteSession(it->second, session);
         if (opcode == CMSG_SET_ACTIVE_MOVER)
             it->second.loginReady = true;
         else if (packet.size() >= 4)
