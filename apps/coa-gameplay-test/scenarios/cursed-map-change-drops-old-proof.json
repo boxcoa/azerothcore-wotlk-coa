@@ -6,7 +6,8 @@
     "proof reply arrives 1 s after its reminder; the player then teleports to another map. With no new",
     "reply the curse is still held 12 s later, past the 10 s return window, so the old proof was",
     "dropped; it lands only after a reply to its new reminder.",
-    "The test reply refuses a lane counter not sent since the transfer reset the counters."
+    "The test reply refuses a lane counter not sent since the transfer reset the counters, and 4.5 s after the",
+    "teleport, before the new reminder, the lane has no request: the return announcement sends none."
   ],
   "timeout_ms": 300000,
   "location": {
@@ -82,7 +83,15 @@
     },
     {
       "action": "wait",
-      "ms": 12000
+      "ms": 4500
+    },
+    {
+      "action": "console",
+      "command": "coa cursed expect Harnessa major warning unrequested"
+    },
+    {
+      "action": "wait",
+      "ms": 7500
     },
     {
       "action": "assert",

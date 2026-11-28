@@ -5,7 +5,8 @@
     "Issue #10788. After a map change the pending curse is announced again with the 10 s first-return",
     "window. Narcolepsy 901841's new reminder is answered at once (5.5 s after the teleport), yet the",
     "curse is still held at 9.5 s and lands only once the 10 s window has run.",
-    "The test reply refuses a lane counter not sent since the transfer reset the counters."
+    "The test reply refuses a lane counter not sent since the transfer reset the counters, and 4.5 s after the",
+    "teleport, before the new reminder, the lane has no request: the return announcement sends none."
   ],
   "timeout_ms": 300000,
   "location": {
@@ -81,7 +82,15 @@
     },
     {
       "action": "wait",
-      "ms": 5500
+      "ms": 4500
+    },
+    {
+      "action": "console",
+      "command": "coa cursed expect Harnessa major warning unrequested"
+    },
+    {
+      "action": "wait",
+      "ms": 1000
     },
     {
       "action": "console",

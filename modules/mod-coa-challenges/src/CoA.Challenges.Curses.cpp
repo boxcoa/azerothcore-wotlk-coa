@@ -751,6 +751,7 @@ namespace CoAChallenges
         bool found = false;
         CoACurses::Phase actual = CoACurses::Phase::Gap;
         CoACurses::Curse const* curse = nullptr;
+        bool requested = false;
         {
             std::lock_guard<std::mutex> lock(CursesMutex);
             if (CursedState* state = FindState(player))
@@ -759,6 +760,7 @@ namespace CoAChallenges
                 CoACurses::LaneClock const& clock = state->lanes[lane == "minor" ? 0 : 1];
                 actual = clock.phase;
                 curse = clock.curse;
+                requested = clock.proofCounter && clock.proofSequence == state->probes.sequence;
             }
         }
         if (!found)
@@ -768,7 +770,9 @@ namespace CoAChallenges
         }
 
         bool matches = actual == wanted;
-        if (matches && detail)
+        if (matches && detail && (*detail == "requested" || *detail == "unrequested"))
+            matches = requested == (*detail == "requested");
+        else if (matches && detail)
         {
             static std::array<std::pair<char const*, CoACurses::Tier>, 4> const TIERS = {{
                 { "nuisance", CoACurses::Tier::Nuisance },
