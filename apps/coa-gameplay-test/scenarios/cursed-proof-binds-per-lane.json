@@ -3,9 +3,10 @@
   "name": "Cursed!: each lane's curse needs the reply to its own proof request",
   "contract": [
     "Issue #10788. Narcolepsy 901841 (major, forced first) and Weakness 901802 (minor, forced 5 s later)",
-    "send their reminders about 10 s after the first force. With only an unrelated reply sent, both stay",
-    "held past their 15 s deadlines; the minor reply then releases only Weakness and the major reply",
-    "only Narcolepsy. The 5 s window after an early reply is checked in cursed-lethal-reminder-proof."
+    "send their reminders about 10 s after the first force. The unrelated reply answers a real time-sync",
+    "request that no lane bound; with only that reply both stay held past their 15 s deadlines. The minor",
+    "reply then releases only Weakness and the major reply only Narcolepsy. The reverse order is checked",
+    "in cursed-proof-binds-per-lane-major-first; the 5 s window in cursed-lethal-reminder-proof."
   ],
   "timeout_ms": 300000,
   "location": {

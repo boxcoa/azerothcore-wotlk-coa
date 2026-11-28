@@ -5,7 +5,8 @@
     "Issue #10788. A loading screen counts as a return even when no update sees it. Narcolepsy 901841's",
     "proof reply arrives 1 s after its reminder; the player then teleports to another map. With no new",
     "reply the curse is still held 12 s later, past the 10 s return window, so the old proof was",
-    "dropped; it lands only after a reply to its new reminder."
+    "dropped; it lands only after a reply to its new reminder.",
+    "The test reply refuses a lane counter not sent since the transfer reset the counters."
   ],
   "timeout_ms": 300000,
   "location": {

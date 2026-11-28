@@ -475,7 +475,11 @@ namespace CoAChallenges
         NoteSession(it->second, session);
         it->second.probes.OnRequestSent(counter, NowMs());
         if (t_proofTarget.active && t_proofTarget.guid == guid)
-            it->second.lanes[LaneIndex(t_proofTarget.lane)].OnProofSent(counter);
+        {
+            CoACurses::LaneClock& clock = it->second.lanes[LaneIndex(t_proofTarget.lane)];
+            clock.OnProofSent(counter);
+            clock.proofSequence = it->second.probes.sequence;
+        }
     }
 
     void CursesOnPacketReceived(WorldSession* session, WorldPacket const& packet)
@@ -649,8 +653,11 @@ namespace CoAChallenges
             handler->SendErrorMessage("Cursed: reply must be minor, major or unrelated.");
             return false;
         }
+        if (which == "unrelated" && player->GetSession())
+            player->GetSession()->SendTimeSync();
+
         bool found = false;
-        bool requested = true;
+        bool requested = false;
         uint32 counter = 0;
         {
             std::lock_guard<std::mutex> lock(CursesMutex);
@@ -659,16 +666,21 @@ namespace CoAChallenges
                 found = true;
                 if (which == "unrelated")
                 {
-                    counter = 0x7FFFFFFF;
-                    for (CoACurses::LaneClock const& clock : state->lanes)
-                        if (clock.proofCounter && *clock.proofCounter == counter)
-                            --counter;
+                    if (!state->probes.outstanding.empty())
+                    {
+                        counter = state->probes.outstanding.back().first;
+                        requested = true;
+                        for (CoACurses::LaneClock const& clock : state->lanes)
+                            if (clock.proofCounter && *clock.proofCounter == counter)
+                                requested = false;
+                    }
                 }
                 else if (CoACurses::LaneClock const& clock = state->lanes[which == "minor" ? 0 : 1];
-                    clock.proofCounter)
+                    clock.proofCounter && clock.proofSequence == state->probes.sequence)
+                {
                     counter = *clock.proofCounter;
-                else
-                    requested = false;
+                    requested = true;
+                }
                 if (requested)
                     ApplyReply(*state, counter, NowMs());
             }
@@ -680,7 +692,7 @@ namespace CoAChallenges
         }
         if (!requested)
         {
-            handler->SendErrorMessage("Cursed: the {} lane has no proof request.", which);
+            handler->SendErrorMessage("Cursed: no {} request was sent in the current time-sync sequence.", which);
             return false;
         }
         handler->PSendSysMessage("Cursed: reply {} sent for {}.", counter, target.GetName());

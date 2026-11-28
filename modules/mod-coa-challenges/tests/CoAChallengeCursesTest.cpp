@@ -464,3 +464,16 @@ TEST(CoACurses, Probe_LateReplyIsJudgedBeforeItRetiresTheRequest)
     EXPECT_TRUE(unknown.late);
     EXPECT_EQ(probes.outstanding.size(), 1u);
 }
+
+TEST(CoACurses, Probe_OnlyCounterZeroStartsANewSequence)
+{
+    ProbeTracker probes;
+    probes.OnRequestSent(0, 0);
+    probes.OnRequestSent(1, 5000);
+    probes.OnRequestSent(2, 15000);
+    EXPECT_EQ(probes.sequence, 1u);
+    probes.OnRequestSent(0, 20000);
+    probes.OnRequestSent(1, 25000);
+    probes.OnRequestSent(2, 35000);
+    EXPECT_EQ(probes.sequence, 2u);
+}

@@ -212,6 +212,7 @@ namespace CoACurses
         bool holdNextStep = false;
         uint32_t returns = 0;
         std::optional<uint32_t> proofCounter;
+        uint32_t proofSequence = 0;
 
         void StartGap(uint32_t gapMs)
         {
@@ -342,11 +343,15 @@ namespace CoACurses
     struct ProbeTracker
     {
         std::vector<std::pair<uint32_t, uint64_t>> outstanding;
+        uint32_t sequence = 0;
 
         void OnRequestSent(uint32_t counter, uint64_t nowMs)
         {
             if (counter == 0)
+            {
                 outstanding.clear();
+                ++sequence;
+            }
             outstanding.emplace_back(counter, nowMs);
         }
 
