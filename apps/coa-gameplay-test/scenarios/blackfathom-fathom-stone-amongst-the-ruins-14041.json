@@ -1,0 +1,77 @@
+{
+  "schema": 1,
+  "name": "Blackfathom Deeps: the Fathom Stone lights up and pays out the Fathom Core for Amongst the Ruins (#14041)",
+  "contract": [
+    "Amongst the Ruins (6921, Horde, from Je'neu Sancrea 12736 in Zoram'gar) wants one Fathom Core 16762. The core",
+    "drops only from the Fathom Stone 177964 (chest, lock 93, loot 15100 -> 16762 at 100% quest-required, interaction",
+    "condition flag 4), whose one spawn is guid 32686 at -782.0, -63.6, -45.1 in the water by the Moonshrine Ruins,",
+    "spawnMask 7. #14041 reports the core cannot be obtained. Expected: for a player with 6921 in the log the world",
+    "stone is a usable quest object, while a player without the quest sees it inactive, and the stone's loot hands",
+    "over 16762. The loot actions only open a gameobject the player summoned, so a copy beside the world spawn",
+    "proves the loot path while the quest-active reads prove the world spawn. prepare_quest grants the required core,",
+    "so the scenario destroys it first to put 6921 back in progress."
+  ],
+  "timeout_ms": 90000,
+  "location": { "map": 48, "x": -779.5, "y": -63.6, "z": -44.6, "o": 3.1, "ignore_access": true },
+  "players": [
+    { "id": "quester", "race": 8, "class": 1, "level": 29 },
+    { "id": "other", "race": 2, "class": 1, "level": 29 }
+  ],
+  "steps": [
+    { "action": "wait", "label": "Let the Moonshrine grid and the login stream settle", "ms": 2000 },
+    { "action": "set_phase", "actor": "quester", "value": 1 },
+    { "action": "set_phase", "actor": "other", "value": 1 },
+    { "action": "set_health", "actor": "quester", "value": 5000000, "maximum": 5000000 },
+    {
+      "action": "prepare_quest", "label": "Take Amongst the Ruins (6921); the fixture hands over its Fathom Core",
+      "actor": "quester", "quest": 6921, "complete": false
+    },
+    {
+      "action": "destroy_item", "label": "Destroy the fixture's core so the quest is back in progress", "actor": "quester",
+      "item": 16762
+    },
+    {
+      "action": "assert", "label": "Amongst the Ruins is in the log and incomplete", "actor": "quester",
+      "metric": "quest_status", "quest": 6921, "equals": 3, "within_ms": 4000
+    },
+    {
+      "action": "assert", "label": "CONTROL: the world Fathom Stone stands beside the players", "actor": "quester",
+      "metric": "nearby_gameobject_count", "entry": 177964, "equals": 1, "within_ms": 8000
+    },
+    {
+      "action": "assert", "label": "CONTROL: a player without 6921 sees the stone inactive", "actor": "other",
+      "metric": "nearby_gameobject_quest_active", "entry": 177964, "equals": 0
+    },
+    {
+      "action": "assert", "label": "DISCRIMINATING: the world stone is a usable quest object for the player on 6921",
+      "actor": "quester", "metric": "nearby_gameobject_quest_active", "entry": 177964, "equals": 1, "within_ms": 4000
+    },
+    {
+      "action": "assert", "label": "CONTROL: the bags hold no Fathom Core yet", "actor": "quester",
+      "metric": "item_count", "item": 16762, "equals": 0
+    },
+    {
+      "action": "summon_gameobject", "label": "Stand in a copy of the stone beside the world spawn so the loot actions can open it",
+      "actor": "quester", "entry": 177964, "distance": 2, "duration_s": 300
+    },
+    {
+      "action": "assert", "label": "the copy is the only stone the loot actions can see", "actor": "quester",
+      "metric": "owned_gameobject_count", "entry": 177964, "equals": 1, "within_ms": 4000
+    },
+    { "action": "wait", "label": "Let the copy become ready", "ms": 1000 },
+    { "action": "loot_gameobject", "label": "Open the copy's loot window", "actor": "quester", "entry": 177964 },
+    {
+      "action": "loot_slot", "label": "DISCRIMINATING: take the Fathom Core - it only rolls for a player on 6921",
+      "actor": "quester", "item": 16762
+    },
+    { "action": "close_loot", "label": "Close the copy's loot window", "actor": "quester" },
+    {
+      "action": "assert", "label": "DISCRIMINATING: the stone pays out the Fathom Core Amongst the Ruins needs",
+      "actor": "quester", "metric": "item_count", "item": 16762, "min": 1, "within_ms": 8000
+    },
+    {
+      "action": "assert", "label": "DISCRIMINATING: the core completes Amongst the Ruins", "actor": "quester",
+      "metric": "quest_status", "quest": 6921, "equals": 1, "within_ms": 4000
+    }
+  ]
+}

@@ -1,0 +1,134 @@
+{
+  "schema": 1,
+  "name": "Ranger Brigand keeps melee auto-attacking after buffing an ally, changing quiver and releasing in a dungeon (#13978)",
+  "contract": [
+    "#13978, #13816 and #14039 (Ranger, Brigand specialization 30): inside a dungeon the melee auto attack stops for",
+    "good after the Ranger buffs a party member with Woodsman's Adaptation 803324 or Footpad's Adaptation 523493,",
+    "after a quiver change, or after dying and releasing; ranged Auto Shot keeps working and only a relog or a mind",
+    "control brings melee back. Bags cannot change in combat (equip error 60), so the quiver changes before the",
+    "fight. Both buffs are instant and the release revives the player at the dungeon start",
+    "(Razorfen Kraul entrance trigger 244, 1943, 1544.63, 82 on map 47). The grouped players enter Razorfen Kraul",
+    "together, and each melee target is a Training Dummy 32666 inside the player's boundary radius so facing never",
+    "gates a swing. Expected: the server keeps landing main-hand melee swings after each trigger."
+  ],
+  "timeout_ms": 150000,
+  "location": { "map": 0, "x": -8917.41, "y": -115.853, "z": 82.3711, "o": 0 },
+  "players": [
+    {
+      "id": "ranger", "race": 1, "class": 21, "level": 57, "melee_hit_rating": 10000,
+      "ranged_hit_rating": 10000, "expertise_rating": 10000
+    },
+    { "id": "ally", "race": 1, "class": 1, "level": 57 }
+  ],
+  "steps": [
+    { "action": "wait", "label": "Let the login stream settle", "ms": 2000 },
+    { "action": "specialization", "actor": "ranger", "id": 30, "label": "Choose the Dueling (Brigand) specialization" },
+    {
+      "action": "assert", "label": "SETUP: Brigand specialization grants Ravager 92116", "actor": "ranger",
+      "metric": "aura", "spell": 92116, "equals": 1, "within_ms": 3000
+    },
+    { "action": "learn", "actor": "ranger", "spell": 75 },
+    { "action": "learn", "actor": "ranger", "spell": 201 },
+    { "action": "learn", "actor": "ranger", "spell": 264 },
+    { "action": "learn", "actor": "ranger", "spell": 803324 },
+    { "action": "learn", "actor": "ranger", "spell": 523493 },
+    { "action": "add_item", "actor": "ranger", "item": 18957 },
+    { "action": "equip", "actor": "ranger", "item": 18957, "slot": 15, "label": "Equip Brushwood Blade (3000 ms 1H sword)" },
+    { "action": "add_item", "actor": "ranger", "item": 2780 },
+    { "action": "equip", "actor": "ranger", "item": 2780, "slot": 17, "label": "Equip Light Hunting Bow" },
+    { "action": "add_item", "actor": "ranger", "item": 2101 },
+    { "action": "equip", "actor": "ranger", "item": 2101, "slot": 19, "label": "Equip Light Quiver in the first bag slot" },
+    { "action": "add_item", "actor": "ranger", "item": 7278 },
+    { "action": "group", "actor": "ranger", "target": "ally", "label": "Group the Ranger with the ally" },
+    { "action": "teleport", "actor": "ranger", "map": 47, "x": 1943.0, "y": 1544.63, "z": 82.0, "o": 1.38, "ignore_access": true },
+    {
+      "action": "assert", "label": "SETUP: the Ranger enters Razorfen Kraul", "actor": "ranger", "metric": "map_id",
+      "equals": 47, "within_ms": 15000
+    },
+    { "action": "teleport", "actor": "ally", "map": 47, "x": 1943.0, "y": 1544.63, "z": 82.0, "o": 1.38, "ignore_access": true },
+    {
+      "action": "assert", "label": "SETUP: the ally enters Razorfen Kraul", "actor": "ally", "metric": "map_id",
+      "equals": 47, "within_ms": 15000
+    },
+    { "action": "wait", "label": "Let the instance and equipment settle", "ms": 1500 },
+    { "action": "set_health", "actor": "ranger", "value": 5000000, "maximum": 5000000 },
+    {
+      "action": "equip", "actor": "ranger", "item": 7278, "slot": 19,
+      "label": "Swap to the Light Leather Quiver inside the dungeon (bags cannot change in combat)"
+    },
+    { "action": "summon", "actor": "ranger", "as": "dummy", "entry": 32666, "distance": 0.3 },
+
+    { "action": "attack", "actor": "ranger", "target": "dummy" },
+    {
+      "action": "assert", "label": "CONTROL: the dummy is the Brigand's melee victim", "actor": "ranger",
+      "metric": "victim", "target": "dummy", "equals": 1, "within_ms": 1000
+    },
+    {
+      "action": "assert",
+      "label": "DISCRIMINATING (#13331, #13816): melee swings land after entering the dungeon and changing quiver",
+      "actor": "ranger", "metric": "melee_damage_count", "hand": 0, "min": 2, "within_ms": 12000
+    },
+
+    { "action": "set_power", "actor": "ranger", "power": 2, "value": 100 },
+    {
+      "action": "snapshot", "actor": "ranger", "metric": "melee_damage_count", "hand": 0, "save_as": "before_woodsman"
+    },
+    { "action": "select", "actor": "ranger", "target": "ally", "label": "Click the party member" },
+    { "action": "cast", "label": "Buff the ally with Woodsman's Adaptation", "actor": "ranger", "spell": 803324, "target": "ally" },
+    {
+      "action": "assert", "label": "SETUP: the ally carries Woodsman's Adaptation", "actor": "ally",
+      "metric": "aura", "spell": 803324, "equals": 1, "within_ms": 3000
+    },
+    { "action": "select", "actor": "ranger", "target": "dummy", "label": "Click the dummy again" },
+    { "action": "attack", "actor": "ranger", "target": "dummy", "label": "Press attack on the dummy again" },
+    {
+      "action": "assert", "label": "DISCRIMINATING (#13978): melee swings land after buffing with Woodsman's Adaptation",
+      "actor": "ranger", "metric": "melee_damage_count", "hand": 0, "relative_to": "before_woodsman", "min": 2,
+      "within_ms": 12000
+    },
+
+    { "action": "set_power", "actor": "ranger", "power": 2, "value": 100 },
+    {
+      "action": "snapshot", "actor": "ranger", "metric": "melee_damage_count", "hand": 0, "save_as": "before_footpad"
+    },
+    { "action": "select", "actor": "ranger", "target": "ally", "label": "Click the party member" },
+    { "action": "cast", "label": "Buff the ally with Footpad's Adaptation", "actor": "ranger", "spell": 523493, "target": "ally" },
+    {
+      "action": "assert", "label": "SETUP: the ally carries Footpad's Adaptation", "actor": "ally",
+      "metric": "aura", "spell": 523493, "equals": 1, "within_ms": 3000
+    },
+    { "action": "select", "actor": "ranger", "target": "dummy", "label": "Click the dummy again" },
+    { "action": "attack", "actor": "ranger", "target": "dummy", "label": "Press attack on the dummy again" },
+    {
+      "action": "assert", "label": "DISCRIMINATING (#13978): melee swings land after buffing with Footpad's Adaptation",
+      "actor": "ranger", "metric": "melee_damage_count", "hand": 0, "relative_to": "before_footpad", "min": 2,
+      "within_ms": 12000
+    },
+
+    { "action": "die", "actor": "ranger" },
+    { "action": "release_spirit", "actor": "ranger", "label": "Release the spirit inside the dungeon" },
+    {
+      "action": "assert", "label": "SETUP: the Ranger is revived in Razorfen Kraul", "actor": "ranger",
+      "metric": "alive", "equals": 1, "within_ms": 5000
+    },
+    {
+      "action": "assert", "label": "SETUP: the Ranger stays in Razorfen Kraul", "actor": "ranger", "metric": "map_id",
+      "equals": 47
+    },
+    {
+      "action": "assert", "label": "SETUP: the Ranger stands at the dungeon start", "actor": "ranger",
+      "metric": "point_distance_2d", "x": 1943.0, "y": 1544.63, "max": 5
+    },
+    { "action": "set_health", "actor": "ranger", "value": 5000000, "maximum": 5000000 },
+    {
+      "action": "snapshot", "actor": "ranger", "metric": "melee_damage_count", "hand": 0, "save_as": "before_release_attack"
+    },
+    { "action": "summon", "actor": "ranger", "as": "dummy_after_release", "entry": 32666, "distance": 0.3 },
+    { "action": "attack", "actor": "ranger", "target": "dummy_after_release", "label": "Press attack on a dummy after the release" },
+    {
+      "action": "assert", "label": "DISCRIMINATING (#14039): melee swings land after dying and releasing in the dungeon",
+      "actor": "ranger", "metric": "melee_damage_count", "hand": 0, "relative_to": "before_release_attack", "min": 2,
+      "within_ms": 15000
+    }
+  ]
+}
