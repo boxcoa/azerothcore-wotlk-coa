@@ -130,7 +130,7 @@ TEST(CoACurses, LaneClock_GapThenAnnounce)
     EXPECT_TRUE(clock.Step(29999, true, now += 29999).empty());
     EXPECT_TRUE(Has(clock.Step(1, true, now += 1), Event::Roll));
 
-    std::vector<Event> begin = clock.Begin(FindCurse(901844));
+    std::vector<Event> begin = clock.Begin(FindCurse(901844), now);
     EXPECT_TRUE(Has(begin, Event::Announce));
     EXPECT_TRUE(Has(begin, Event::RequestProof));
     EXPECT_FALSE(Has(begin, Event::Remind));
@@ -140,7 +140,7 @@ TEST(CoACurses, LaneClock_LethalTimeline)
 {
     uint64_t now = 0;
     LaneClock clock;
-    std::vector<Event> begin = clock.Begin(FindCurse(901871));
+    std::vector<Event> begin = clock.Begin(FindCurse(901871), now);
     EXPECT_TRUE(Has(begin, Event::Announce));
     EXPECT_FALSE(Has(begin, Event::RequestProof));
 
@@ -161,7 +161,7 @@ TEST(CoACurses, LaneClock_NoCastWithoutReply)
 {
     uint64_t now = 0;
     LaneClock clock;
-    clock.Begin(FindCurse(901871));
+    clock.Begin(FindCurse(901871), now);
     clock.Step(15000, true, now += 15000);
     clock.OnProofSent(7, now);
     EXPECT_FALSE(Has(clock.Step(5000, true, now += 5000), Event::Cast));
@@ -174,7 +174,7 @@ TEST(CoACurses, LaneClock_LongUpdateKeepsReminderWindow)
 {
     uint64_t now = 0;
     LaneClock clock;
-    clock.Begin(FindCurse(901871));
+    clock.Begin(FindCurse(901871), now);
     std::vector<Event> burst = clock.Step(25000, true, now += 25000);
     EXPECT_EQ(CountOf(burst, Event::Remind), 1u);
     EXPECT_EQ(CountOf(burst, Event::RequestProof), 1u);
@@ -193,7 +193,7 @@ TEST(CoACurses, LaneClock_ReminderWindowStartsWhenTheRequestIsSent)
 {
     uint64_t now = 0;
     LaneClock clock;
-    clock.Begin(FindCurse(901841));
+    clock.Begin(FindCurse(901841), now);
     std::vector<Event> reminder = clock.Step(10000, true, now += 10000);
     EXPECT_TRUE(Has(reminder, Event::RequestProof));
     clock.OnProofSent(5, now + 6000);
@@ -208,7 +208,7 @@ TEST(CoACurses, LaneClock_OldReplyDoesNotProve)
 {
     uint64_t now = 0;
     LaneClock clock;
-    clock.Begin(FindCurse(901841));
+    clock.Begin(FindCurse(901841), now);
     clock.OnProofReply(7);
     EXPECT_FALSE(clock.proven);
     clock.Step(10000, true, now += 10000);
@@ -223,10 +223,10 @@ TEST(CoACurses, LaneClock_ReturnDiscardsRequest)
 {
     uint64_t now = 0;
     LaneClock clock;
-    clock.Begin(FindCurse(901841));
+    clock.Begin(FindCurse(901841), now);
     clock.Step(10000, true, now += 10000);
     clock.OnProofSent(7, now);
-    clock.OnReturn();
+    clock.OnReturn(now);
     clock.OnProofReply(7);
     EXPECT_FALSE(clock.proven);
     EXPECT_FALSE(clock.proofCounter.has_value());
@@ -240,7 +240,7 @@ TEST(CoACurses, LaneClock_AbsencePauses)
     EXPECT_TRUE(clock.Step(60000, false, now += 60000).empty());
     EXPECT_EQ(clock.gapLeftMs, 30000u);
 
-    clock.Begin(FindCurse(901871));
+    clock.Begin(FindCurse(901871), now);
     EXPECT_TRUE(clock.Step(60000, false, now += 60000).empty());
     EXPECT_EQ(clock.remainingMs, 20000u);
 }
@@ -249,29 +249,32 @@ TEST(CoACurses, LaneClock_RelogWindows)
 {
     uint64_t now = 0;
     LaneClock early;
-    early.Begin(FindCurse(901871));
+    early.Begin(FindCurse(901871), now);
     early.Step(3000, true, now += 3000);
-    early.OnReturn();
+    early.OnReturn(now);
     EXPECT_EQ(early.remainingMs, 17000u);
 
     LaneClock late;
-    late.Begin(FindCurse(901871));
+    late.Begin(FindCurse(901871), now);
     late.Step(18000, true, now += 18000);
-    std::vector<Event> first = late.OnReturn();
+    now += 9000;
+    std::vector<Event> first = late.OnReturn(now);
     EXPECT_EQ(late.remainingMs, 10000u);
     EXPECT_TRUE(Has(first, Event::Announce));
     EXPECT_FALSE(late.reminderSent);
 
-    EXPECT_TRUE(late.Step(9000, true, now += 9000).empty());
+    EXPECT_TRUE(late.Step(9000, true, now).empty());
     EXPECT_EQ(late.remainingMs, 10000u);
     late.Step(9000, true, now += 9000);
-    std::vector<Event> second = late.OnReturn();
+    now += 5000;
+    std::vector<Event> second = late.OnReturn(now);
     EXPECT_EQ(late.remainingMs, 5000u);
     EXPECT_TRUE(Has(second, Event::Announce));
     EXPECT_TRUE(Has(second, Event::RequestProof));
     EXPECT_FALSE(late.proven);
 
-    EXPECT_FALSE(Has(late.Step(5000, true, now += 5000), Event::Cast));
+    EXPECT_TRUE(late.Step(5000, true, now).empty());
+    EXPECT_EQ(late.remainingMs, 5000u);
     late.OnProofSent(11, now);
     late.OnProofReply(11);
     EXPECT_FALSE(Has(late.Step(4999, true, now += 4999), Event::Cast));
@@ -282,26 +285,65 @@ TEST(CoACurses, LaneClock_ReturnOnLargeUpdateKeepsFullWindow)
 {
     uint64_t now = 0;
     LaneClock first;
-    first.Begin(FindCurse(901871));
+    first.Begin(FindCurse(901871), now);
     first.Step(18000, true, now += 18000);
-    first.OnReturn();
-    EXPECT_TRUE(first.Step(30000, true, now += 30000).empty());
+    now += 30000;
+    first.OnReturn(now);
+    EXPECT_TRUE(first.Step(30000, true, now).empty());
     EXPECT_EQ(first.remainingMs, 10000u);
     EXPECT_FALSE(first.reminderSent);
 
     LaneClock later;
-    later.Begin(FindCurse(901871));
+    later.Begin(FindCurse(901871), now);
     later.Step(18000, true, now += 18000);
-    later.OnReturn();
-    later.Step(1, true, now += 1);
+    later.OnReturn(now += 1);
+    later.Step(1, true, now);
     later.Step(9500, true, now += 9500);
-    std::vector<Event> back = later.OnReturn();
+    now += 5000;
+    std::vector<Event> back = later.OnReturn(now);
     EXPECT_TRUE(Has(back, Event::RequestProof));
-    EXPECT_TRUE(later.Step(5000, true, now += 5000).empty());
+    EXPECT_TRUE(later.Step(5000, true, now).empty());
+    EXPECT_EQ(later.remainingMs, 5000u);
     later.OnProofSent(21, now);
     later.OnProofReply(21);
     EXPECT_FALSE(Has(later.Step(4999, true, now += 4999), Event::Cast));
     EXPECT_TRUE(Has(later.Step(1, true, now += 1), Event::Cast));
+}
+
+TEST(CoACurses, LaneClock_AnnouncedWindowStartsWhenAnnounced)
+{
+    LaneClock clock;
+    clock.Begin(FindCurse(901841), 6000);
+    EXPECT_TRUE(clock.Step(6100, true, 6100).empty());
+    EXPECT_EQ(clock.remainingMs, 14900u);
+    EXPECT_FALSE(Has(clock.Step(3900, true, 10000), Event::Remind));
+
+    std::vector<Event> reminder = clock.Step(6000, true, 16000);
+    EXPECT_TRUE(Has(reminder, Event::Remind));
+    EXPECT_TRUE(Has(reminder, Event::RequestProof));
+    clock.OnProofSent(4, 16000);
+    clock.OnProofReply(4);
+    EXPECT_FALSE(Has(clock.Step(4999, true, 20999), Event::Cast));
+    EXPECT_TRUE(Has(clock.Step(1, true, 21000), Event::Cast));
+}
+
+TEST(CoACurses, LaneClock_ReturnWindowStartsWhenReannounced)
+{
+    LaneClock clock;
+    clock.Begin(FindCurse(901841), 0);
+    clock.Step(14000, true, 14000);
+    clock.OnReturn(26000);
+    EXPECT_EQ(clock.remainingMs, 10000u);
+    EXPECT_TRUE(clock.Step(6000, true, 26000).empty());
+
+    EXPECT_TRUE(clock.Step(6100, true, 26100).empty());
+    EXPECT_EQ(clock.remainingMs, 9900u);
+    std::vector<Event> reminder = clock.Step(4900, true, 31000);
+    EXPECT_TRUE(Has(reminder, Event::Remind));
+    clock.OnProofSent(8, 31000);
+    clock.OnProofReply(8);
+    EXPECT_FALSE(Has(clock.Step(4999, true, 35999), Event::Cast));
+    EXPECT_TRUE(Has(clock.Step(1, true, 36000), Event::Cast));
 }
 
 TEST(CoACurses, LaneClock_TierFixedAtRoll)
@@ -309,7 +351,7 @@ TEST(CoACurses, LaneClock_TierFixedAtRoll)
     uint64_t now = 0;
     LaneClock clock;
     Curse const* rolled = FindCurse(901841);
-    clock.Begin(rolled);
+    clock.Begin(rolled, now);
     for (int i = 0; i < 20; ++i)
         clock.Step(500, true, now += 500);
     EXPECT_EQ(clock.curse, rolled);
@@ -319,7 +361,7 @@ TEST(CoACurses, LaneClock_EndedStartsGap)
 {
     uint64_t now = 0;
     LaneClock clock;
-    clock.Begin(FindCurse(901844));
+    clock.Begin(FindCurse(901844), now);
     clock.OnProofSent(3, now);
     clock.OnEnded(45000);
     EXPECT_EQ(clock.phase, Phase::Gap);

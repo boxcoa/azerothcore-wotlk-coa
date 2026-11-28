@@ -206,6 +206,8 @@ namespace CoACurses
         Curse const* curse = nullptr;
         uint32_t remainingMs = 0;
         uint32_t servedMs = 0;
+        uint64_t windowStartMs = 0;
+        uint32_t windowMs = 0;
         std::optional<uint64_t> proofSentMs;
         bool reminderSent = false;
         bool proven = false;
@@ -223,11 +225,13 @@ namespace CoACurses
             returns = 0;
         }
 
-        std::vector<Event> Begin(Curse const* rolled)
+        std::vector<Event> Begin(Curse const* rolled, uint64_t nowMs)
         {
             phase = Phase::Warning;
             curse = rolled;
             remainingMs = WarningMs(rolled->tier);
+            windowStartMs = nowMs;
+            windowMs = remainingMs;
             servedMs = 0;
             returns = 0;
             ResetWarning();
@@ -263,7 +267,8 @@ namespace CoACurses
 
             bool const reminderWasSent = reminderSent;
             servedMs += diffMs;
-            remainingMs = remainingMs > diffMs ? remainingMs - diffMs : 0;
+            uint64_t const elapsed = nowMs > windowStartMs ? nowMs - windowStartMs : 0;
+            remainingMs = elapsed < windowMs ? uint32_t(windowMs - elapsed) : 0;
             if (!reminderWasSent && remainingMs <= REMINDER_LEAD_MS)
             {
                 reminderSent = true;
@@ -291,7 +296,7 @@ namespace CoACurses
                 proven = true;
         }
 
-        std::vector<Event> OnReturn()
+        std::vector<Event> OnReturn(uint64_t nowMs)
         {
             if (phase != Phase::Warning)
                 return {};
@@ -299,6 +304,8 @@ namespace CoACurses
             uint32_t const minimum = returns == 1 ? FIRST_RETURN_MIN_MS : LATER_RETURN_MIN_MS;
             if (remainingMs < minimum)
                 remainingMs = minimum;
+            windowStartMs = nowMs;
+            windowMs = remainingMs;
             ResetWarning();
             holdNextStep = true;
             return Announcement();

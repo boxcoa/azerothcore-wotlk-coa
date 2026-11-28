@@ -432,6 +432,7 @@ namespace CoAChallenges
                 state.wasPresent = false;
             }
 
+            uint64 const now = LiveMs();
             CoACurses::PresenceInput const presence = ReadPresence(player, state);
             bool const present = CoACurses::CountdownRuns(presence);
             state.absentForDamage = CoACurses::DamageSuppressed(presence);
@@ -440,7 +441,7 @@ namespace CoAChallenges
             {
                 CoACurses::LaneClock& clock = state.lanes[index];
                 if (present && !state.wasPresent)
-                    Append(actions, index, clock.OnReturn(), clock);
+                    Append(actions, index, clock.OnReturn(now), clock);
 
                 if (clock.phase == CoACurses::Phase::Active)
                 {
@@ -449,13 +450,13 @@ namespace CoAChallenges
                     continue;
                 }
 
-                std::vector<CoACurses::Event> const events = clock.Step(diff, present, LiveMs());
+                std::vector<CoACurses::Event> const events = clock.Step(diff, present, now);
                 for (CoACurses::Event event : events)
                 {
                     if (event != CoACurses::Event::Roll)
                         continue;
                     if (CoACurses::Curse const* curse = RollCurse(player, state, index))
-                        Append(actions, index, clock.Begin(curse), clock);
+                        Append(actions, index, clock.Begin(curse, now), clock);
                     else
                         clock.StartGap(RandomGapMs());
                 }
