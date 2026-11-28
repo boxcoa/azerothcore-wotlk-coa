@@ -3,9 +3,9 @@
   "name": "Cursed!: each lane's curse needs the reply to its own proof request",
   "contract": [
     "Issue #10788. Narcolepsy 901841 (major, forced first) and Weakness 901802 (minor, forced 5 s later)",
-    "send their reminders about 10 s after the first force. An unrelated reply releases neither; the minor",
-    "reply, sent at once, still waits the full 5 s after its reminder and releases only Weakness; the",
-    "major lane stays held until its own reply. Same-update sends are covered by the unit tests."
+    "send their reminders about 10 s after the first force. With only an unrelated reply sent, both stay",
+    "held past their 15 s deadlines; the minor reply then releases only Weakness and the major reply",
+    "only Narcolepsy. The 5 s window after an early reply is checked in cursed-lethal-reminder-proof."
   ],
   "timeout_ms": 300000,
   "location": {
@@ -80,12 +80,8 @@
       "command": "coa cursed reply Harnessa unrelated"
     },
     {
-      "action": "console",
-      "command": "coa cursed reply Harnessa minor"
-    },
-    {
       "action": "wait",
-      "ms": 4200
+      "ms": 5500
     },
     {
       "action": "assert",
@@ -93,7 +89,7 @@
       "metric": "aura",
       "spell": 901802,
       "equals": 0,
-      "label": "the minor reply does not skip the 5 s window (checked at 14.7 s)"
+      "label": "an unrelated reply does not release Weakness past its deadline"
     },
     {
       "action": "assert",
@@ -101,7 +97,11 @@
       "metric": "aura",
       "spell": 901841,
       "equals": 0,
-      "label": "an unrelated reply does not release Narcolepsy"
+      "label": "an unrelated reply does not release Narcolepsy past its deadline"
+    },
+    {
+      "action": "console",
+      "command": "coa cursed reply Harnessa minor"
     },
     {
       "action": "assert",
@@ -109,8 +109,8 @@
       "metric": "aura",
       "spell": 901802,
       "equals": 1,
-      "label": "Weakness lands once its window has run",
-      "within_ms": 1500
+      "label": "the minor reply releases Weakness",
+      "within_ms": 1000
     },
     {
       "action": "assert",
@@ -122,7 +122,7 @@
     },
     {
       "action": "wait",
-      "ms": 2000
+      "ms": 1000
     },
     {
       "action": "assert",
