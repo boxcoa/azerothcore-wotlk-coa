@@ -1,0 +1,114 @@
+{
+  "schema": 1,
+  "name": "Cursed!: Curse of Sickness casts one of its three helpers on every tick",
+  "contract": [
+    "Issue #10788. Curse of Sickness 901809 fires 901812 every 5 s for 30 s (6 ticks). Its list",
+    "is missing, so by the PR author's ruling each tick casts one of 901810, 901811 and",
+    "901813 with equal odds. The harness cannot sum counts across spells, so this checks that",
+    "the pick fires once per tick and that no helper exceeds that; one helper per pick is the handler's."
+  ],
+  "timeout_ms": 300000,
+  "location": {
+    "map": 0,
+    "x": -9617.06,
+    "y": -288.949,
+    "z": 57.3053
+  },
+  "players": [
+    {
+      "id": "hero",
+      "race": 1,
+      "class": 1,
+      "level": 1
+    }
+  ],
+  "steps": [
+    {
+      "action": "start_challenge",
+      "actor": "hero",
+      "challenge": 617,
+      "level": 1
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "challenge_start_code",
+      "equals": 0,
+      "within_ms": 3000,
+      "label": "the Cursed! trial activates"
+    },
+    {
+      "action": "set_level",
+      "actor": "hero",
+      "value": 10
+    },
+    {
+      "action": "wait",
+      "ms": 500
+    },
+    {
+      "action": "console",
+      "command": "coa cursed presence Harnessa present"
+    },
+    {
+      "action": "console",
+      "command": "coa cursed force Harnessa 901809"
+    },
+    {
+      "action": "wait",
+      "ms": 11000
+    },
+    {
+      "action": "console",
+      "command": "coa cursed reply Harnessa major"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "aura",
+      "spell": 901809,
+      "equals": 1,
+      "within_ms": 6000,
+      "label": "Curse of Sickness lands"
+    },
+    {
+      "action": "wait",
+      "ms": 31500
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_cast_count",
+      "spell": 901812,
+      "equals": 6,
+      "label": "the random pick 901812 fires once per 5 s tick"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_cast_count",
+      "spell": 901810,
+      "min": 0,
+      "max": 6,
+      "label": "helper 901810 is cast at most once per tick"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_cast_count",
+      "spell": 901811,
+      "min": 0,
+      "max": 6,
+      "label": "helper 901811 is cast at most once per tick"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_cast_count",
+      "spell": 901813,
+      "min": 0,
+      "max": 6,
+      "label": "helper 901813 is cast at most once per tick"
+    }
+  ]
+}

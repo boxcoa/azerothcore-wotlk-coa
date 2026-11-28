@@ -3909,7 +3909,13 @@ namespace CoAChallenges
     class CoAChallengesSpells : public AllSpellScript
     {
     public:
-        CoAChallengesSpells() : AllSpellScript("CoAChallengesSpells", { ALLSPELLHOOK_ON_SPELL_CHECK_CAST }) { }
+        CoAChallengesSpells() : AllSpellScript("CoAChallengesSpells",
+            { ALLSPELLHOOK_ON_SPELL_CHECK_CAST, ALLSPELLHOOK_ON_CAST }) { }
+
+        void OnSpellCast(Spell* /*spell*/, Unit* caster, SpellInfo const* spellInfo, bool /*skipCheck*/) override
+        {
+            CursesOnSpellCast(caster, spellInfo);
+        }
 
         void OnSpellCheckCast(Spell* spell, bool /*strict*/, SpellCastResult& res) override
         {

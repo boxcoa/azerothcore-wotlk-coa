@@ -13,6 +13,12 @@ namespace CoAChallenges
         constexpr uint32 CURSED_CHALLENGE = 617;
         constexpr uint32 CURSED_PRESTIGE_CHALLENGE = 618;
         constexpr uint32 REFLECTION_DAMAGE_SPELL = 901856;
+        constexpr uint32 WHISPERS_PICK = 901869;
+        constexpr uint32 WHISPERS_VISION = 901860;
+        constexpr uint32 SICKNESS_PICK = 901812;
+        constexpr std::array<uint32, 3> SICKNESS_HELPERS = { 901810, 901811, 901813 };
+        constexpr uint32 CLUMSINESS_PICK = 901817;
+        constexpr std::array<uint32, 3> CLUMSINESS_HELPERS = { 901818, 901819, 901820 };
         constexpr std::array<std::pair<uint32, uint32>, 3> REFLECTION_SHARES = {{
             { 901852, 75 },
             { 901853, 50 },
@@ -459,6 +465,28 @@ namespace CoAChallenges
         std::lock_guard<std::mutex> lock(CursesMutex);
         if (CursedState* state = FindState(player))
             state->reflections.push_back(amount);
+    }
+
+    void CursesOnSpellCast(Unit* caster, SpellInfo const* spellInfo)
+    {
+        if (!caster || !spellInfo || !caster->IsPlayer())
+            return;
+        uint32 helper = 0;
+        switch (spellInfo->Id)
+        {
+            case WHISPERS_PICK:
+                helper = WHISPERS_VISION;
+                break;
+            case SICKNESS_PICK:
+                helper = SICKNESS_HELPERS[urand(0, 2)];
+                break;
+            case CLUMSINESS_PICK:
+                helper = CLUMSINESS_HELPERS[urand(0, 2)];
+                break;
+            default:
+                return;
+        }
+        caster->CastSpell(caster, helper, true);
     }
 
     bool HandleCoACursedForceCommand(ChatHandler* handler, PlayerIdentifier target, uint32 spell)
