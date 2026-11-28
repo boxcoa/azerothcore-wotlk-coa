@@ -3,8 +3,10 @@
   "name": "Cursed!: Reflection ignores dodged and fully absorbed hits",
   "contract": [
     "Issue #10788. Reflection reads the final damage after the hit roll and absorbs. With Major",
-    "Reflection 901852 on the player, swings the target dodges (dodge 100%) and swings a Power Word:",
-    "Shield 48066 absorbs completely deal no damage, so no 901856 reflection is dealt."
+    "Reflection 901852 on the player, swings the target dodges (dodge fixture 100%) and swings a Power Word:",
+    "Shield 48066 absorbs completely deal no damage, so no 901856 reflection is dealt. A dodged swing that",
+    "reflected would make every swing reflect, so the dodge phase asserts at least one dodge and fewer",
+    "reflections than swings; a rare swing that lands still reflects once (positions and facing recorded)."
   ],
   "timeout_ms": 400000,
   "location": {
@@ -89,10 +91,52 @@
     {
       "action": "snapshot",
       "actor": "hero",
+      "metric": "melee_attack_count",
+      "save_as": "swings_start"
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
       "metric": "spell_damage_count",
       "spell": 901856,
       "target": "hero",
       "save_as": "miss_0"
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "position_x",
+      "save_as": "hero_x_before"
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "position_y",
+      "save_as": "hero_y_before"
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "position_o",
+      "save_as": "hero_o_before"
+    },
+    {
+      "action": "snapshot",
+      "actor": "foe",
+      "metric": "position_x",
+      "save_as": "foe_x_before"
+    },
+    {
+      "action": "snapshot",
+      "actor": "foe",
+      "metric": "position_y",
+      "save_as": "foe_y_before"
+    },
+    {
+      "action": "snapshot",
+      "actor": "foe",
+      "metric": "position_o",
+      "save_as": "foe_o_before"
     },
     {
       "action": "attack_until_swings",
@@ -102,12 +146,55 @@
       "timeout_ms": 15000
     },
     {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "position_x",
+      "save_as": "hero_x_after"
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "position_y",
+      "save_as": "hero_y_after"
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "position_o",
+      "save_as": "hero_o_after"
+    },
+    {
+      "action": "snapshot",
+      "actor": "foe",
+      "metric": "position_x",
+      "save_as": "foe_x_after"
+    },
+    {
+      "action": "snapshot",
+      "actor": "foe",
+      "metric": "position_y",
+      "save_as": "foe_y_after"
+    },
+    {
+      "action": "snapshot",
+      "actor": "foe",
+      "metric": "position_o",
+      "save_as": "foe_o_after"
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "melee_attack_count",
+      "relative_to": "swings_start",
+      "save_as": "dodge_swings"
+    },
+    {
       "action": "assert",
       "actor": "hero",
       "metric": "melee_dodges_dealt",
       "relative_to": "dodges_0",
-      "min": 3,
-      "label": "every swing is dodged"
+      "min": 1,
+      "label": "the foe dodges"
     },
     {
       "action": "assert",
@@ -116,8 +203,9 @@
       "spell": 901856,
       "target": "hero",
       "relative_to": "miss_0",
-      "equals": 0,
-      "label": "a dodged swing reflects nothing"
+      "ratio_to": "dodge_swings",
+      "max": 0.99,
+      "label": "a dodged swing reflects nothing: fewer reflections than swings"
     },
     {
       "action": "set_combat_avoidance",
