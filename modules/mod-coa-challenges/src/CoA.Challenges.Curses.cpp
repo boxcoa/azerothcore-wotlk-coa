@@ -42,6 +42,9 @@ namespace CoAChallenges
             bool loginReady = true;
             bool wasPresent = true;
             bool absentForDamage = false;
+            WorldSession const* session = nullptr;
+            uint32 mapId = 0;
+            uint32 instanceId = 0;
             std::vector<int32> reflections;
         };
 
@@ -114,13 +117,20 @@ namespace CoAChallenges
         {
             for (size_t index = 0; index < state.lanes.size(); ++index)
                 state.lanes[index].StartGap(RandomGapMs());
-            for (CoACurses::Curse const& curse : CoACurses::Pool())
+            for (bool const parentsOnly : { true, false })
             {
-                CoACurses::LaneClock& clock = state.lanes[LaneIndex(CoACurses::LaneOf(curse.tier))];
-                if (clock.phase == CoACurses::Phase::Gap && HasOwnedFamilyAura(player, curse))
+                for (CoACurses::Curse const& curse : CoACurses::Pool())
                 {
-                    clock.phase = CoACurses::Phase::Active;
-                    clock.curse = &curse;
+                    CoACurses::LaneClock& clock = state.lanes[LaneIndex(CoACurses::LaneOf(curse.tier))];
+                    if (clock.phase != CoACurses::Phase::Gap)
+                        continue;
+                    bool const owned = parentsOnly ? player->GetAura(curse.spell, player->GetGUID()) != nullptr
+                        : HasOwnedFamilyAura(player, curse);
+                    if (owned)
+                    {
+                        clock.phase = CoACurses::Phase::Active;
+                        clock.curse = &curse;
+                    }
                 }
             }
             state.initialised = true;
@@ -361,7 +371,26 @@ namespace CoAChallenges
             CursedState& state = CursesStates[guid];
             CursesStateCount.store(CursesStates.size(), std::memory_order_relaxed);
             if (!state.initialised)
+            {
                 InitialiseLanes(player, state);
+                state.mapId = player->GetMapId();
+                state.instanceId = player->GetInstanceId();
+                if (!state.session)
+                    state.session = player->GetSession();
+            }
+            if (state.session != player->GetSession())
+            {
+                state.session = player->GetSession();
+                state.loginReady = false;
+                state.wasPresent = false;
+                state.probes.outstanding.clear();
+            }
+            if (state.mapId != player->GetMapId() || state.instanceId != player->GetInstanceId())
+            {
+                state.mapId = player->GetMapId();
+                state.instanceId = player->GetInstanceId();
+                state.wasPresent = false;
+            }
 
             CoACurses::PresenceInput const presence = ReadPresence(player, state);
             bool const present = CoACurses::CountdownRuns(presence);
@@ -410,6 +439,7 @@ namespace CoAChallenges
         state.loginReady = false;
         state.wasPresent = false;
         state.probes.outstanding.clear();
+        state.session = player->GetSession();
     }
 
     void CursesOnPacketSent(WorldSession* session, WorldPacket const& packet)
@@ -478,7 +508,11 @@ namespace CoAChallenges
                 share = std::max(share, pct);
         if (!share)
             return;
-        int32 const amount = int32(uint64(damage) * share / 100);
+        uint32 dealt = std::min<uint32>(damage, victim->GetHealth());
+        if (Player const* target = victim->ToPlayer())
+            if (target->duel && target->duel->Opponent == player && damage >= victim->GetHealth() && dealt)
+                dealt = victim->GetHealth() - 1;
+        int32 const amount = int32(uint64(dealt) * share / 100);
         if (amount <= 0)
             return;
         std::lock_guard<std::mutex> lock(CursesMutex);
@@ -620,6 +654,78 @@ namespace CoAChallenges
             return false;
         }
         handler->PSendSysMessage("Cursed: reply {} sent for {}.", counter, target.GetName());
+        return true;
+    }
+
+    bool HandleCoACursedExpectCommand(ChatHandler* handler, PlayerIdentifier target, std::string lane,
+        std::string phase, Optional<std::string> detail)
+    {
+        Player* player = target.GetConnectedPlayer();
+        if (!player || (lane != "minor" && lane != "major"))
+        {
+            handler->SendErrorMessage("Cursed: expect needs an online player and the minor or major lane.");
+            return false;
+        }
+        CoACurses::Phase wanted;
+        if (phase == "gap")
+            wanted = CoACurses::Phase::Gap;
+        else if (phase == "warning")
+            wanted = CoACurses::Phase::Warning;
+        else if (phase == "active")
+            wanted = CoACurses::Phase::Active;
+        else
+        {
+            handler->SendErrorMessage("Cursed: phase must be gap, warning or active.");
+            return false;
+        }
+
+        bool found = false;
+        CoACurses::Phase actual = CoACurses::Phase::Gap;
+        CoACurses::Curse const* curse = nullptr;
+        {
+            std::lock_guard<std::mutex> lock(CursesMutex);
+            if (CursedState* state = FindState(player))
+            {
+                found = true;
+                CoACurses::LaneClock const& clock = state->lanes[lane == "minor" ? 0 : 1];
+                actual = clock.phase;
+                curse = clock.curse;
+            }
+        }
+        if (!found)
+        {
+            handler->SendErrorMessage("Cursed: '{}' is not on a Cursed! run.", target.GetName());
+            return false;
+        }
+
+        bool matches = actual == wanted;
+        if (matches && detail)
+        {
+            static std::array<std::pair<char const*, CoACurses::Tier>, 4> const TIERS = {{
+                { "nuisance", CoACurses::Tier::Nuisance },
+                { "hindrance", CoACurses::Tier::Hindrance },
+                { "control", CoACurses::Tier::Control },
+                { "lethal", CoACurses::Tier::Lethal },
+            }};
+            bool tierDetail = false;
+            for (auto const& [name, tier] : TIERS)
+                if (*detail == name)
+                {
+                    tierDetail = true;
+                    matches = curse && curse->tier == tier;
+                }
+            if (!tierDetail)
+                matches = curse && std::to_string(curse->spell) == *detail;
+        }
+
+        uint32 const spell = curse ? curse->spell : 0;
+        if (!matches)
+        {
+            handler->SendErrorMessage("Cursed: {} lane of {} is phase {} with curse {}, expected {} {}.", lane,
+                target.GetName(), uint32(actual), spell, phase, detail ? *detail : "");
+            return false;
+        }
+        handler->PSendSysMessage("Cursed: {} lane of {} is {} with curse {}.", lane, target.GetName(), phase, spell);
         return true;
     }
 }

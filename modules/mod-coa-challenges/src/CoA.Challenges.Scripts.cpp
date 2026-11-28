@@ -2978,7 +2978,8 @@ namespace CoAChallenges
             {
                 { "force",    HandleCoACursedForceCommand,    SEC_ADMINISTRATOR, Console::Yes },
                 { "presence", HandleCoACursedPresenceCommand, SEC_ADMINISTRATOR, Console::Yes },
-                { "reply",    HandleCoACursedReplyCommand,    SEC_ADMINISTRATOR, Console::Yes }
+                { "reply",    HandleCoACursedReplyCommand,    SEC_ADMINISTRATOR, Console::Yes },
+                { "expect",   HandleCoACursedExpectCommand,   SEC_ADMINISTRATOR, Console::Yes }
             };
             static ChatCommandTable coaChallengesTable =
             {

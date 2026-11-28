@@ -413,6 +413,8 @@ bool HandleCoACursedPresenceCommand(ChatHandler* handler, Acore::ChatCommands::P
     std::string mode);
 bool HandleCoACursedReplyCommand(ChatHandler* handler, Acore::ChatCommands::PlayerIdentifier target,
     std::string which);
+bool HandleCoACursedExpectCommand(ChatHandler* handler, Acore::ChatCommands::PlayerIdentifier target,
+    std::string lane, std::string phase, Optional<std::string> detail);
 void TrackInvertedBreath(Player* player, uint32 challengeID);
 void UntrackInvertedBreath(Player* player);
 void RefreshInvertedBreathTracking(Player* player);
