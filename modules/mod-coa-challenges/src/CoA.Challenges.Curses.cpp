@@ -211,7 +211,7 @@ namespace CoAChallenges
 
         void ApplyReply(CursedState& state, uint32 counter)
         {
-            if (state.probes.DeadlinePassed(NowMs()))
+            if (state.presence == PresenceOverride::Auto && state.probes.DeadlinePassed(NowMs()))
                 state.wasPresent = false;
             state.probes.OnReply(counter);
             for (CoACurses::LaneClock& clock : state.lanes)
