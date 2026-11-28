@@ -208,6 +208,7 @@ namespace CoACurses
         uint32_t servedMs = 0;
         uint64_t windowStartMs = 0;
         uint32_t windowMs = 0;
+        uint32_t warningSerial = 0;
         std::optional<uint64_t> proofSentMs;
         bool reminderSent = false;
         bool proven = false;
@@ -232,6 +233,7 @@ namespace CoACurses
             remainingMs = WarningMs(rolled->tier);
             windowStartMs = nowMs;
             windowMs = remainingMs;
+            ++warningSerial;
             servedMs = 0;
             returns = 0;
             ResetWarning();
@@ -284,6 +286,12 @@ namespace CoACurses
             return events;
         }
 
+        void OnAnnouncementSent(uint32_t serial, uint64_t sentMs)
+        {
+            if (phase == Phase::Warning && serial == warningSerial && sentMs > windowStartMs)
+                windowStartMs = sentMs;
+        }
+
         void OnProofSent(uint32_t counter, uint64_t sentMs)
         {
             proofCounter = counter;
@@ -306,6 +314,7 @@ namespace CoACurses
                 remainingMs = minimum;
             windowStartMs = nowMs;
             windowMs = remainingMs;
+            ++warningSerial;
             ResetWarning();
             holdNextStep = true;
             return Announcement();

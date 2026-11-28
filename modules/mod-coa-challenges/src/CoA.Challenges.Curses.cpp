@@ -54,6 +54,14 @@ namespace CoAChallenges
             CoACurses::Event event;
             CoACurses::Curse const* curse;
             uint32 remainingMs;
+            uint32 serial;
+        };
+
+        struct AnnouncementSent
+        {
+            CoACurses::Lane lane;
+            uint32 serial;
+            uint64 sentMs;
         };
 
         struct ProofTarget
@@ -204,7 +212,7 @@ namespace CoAChallenges
         {
             for (CoACurses::Event event : events)
                 if (event != CoACurses::Event::Roll && event != CoACurses::Event::None)
-                    actions.push_back({ LaneAt(index), event, clock.curse, clock.remainingMs });
+                    actions.push_back({ LaneAt(index), event, clock.curse, clock.remainingMs, clock.warningSerial });
         }
 
         void NoteSession(CursedState& state, WorldSession const* session)
@@ -313,8 +321,9 @@ namespace CoAChallenges
             t_proofTarget.active = false;
         }
 
-        void Execute(Player* player, std::vector<CurseAction> const& actions)
+        std::vector<AnnouncementSent> Execute(Player* player, std::vector<CurseAction> const& actions)
         {
+            std::vector<AnnouncementSent> announced;
             for (CurseAction const& action : actions)
             {
                 if (!action.curse)
@@ -323,6 +332,7 @@ namespace CoAChallenges
                 {
                     case CoACurses::Event::Announce:
                         SendCurseMessage(player, *action.curse, action.remainingMs, false);
+                        announced.push_back({ action.lane, action.serial, LiveMs() });
                         break;
                     case CoACurses::Event::Remind:
                         SendCurseMessage(player, *action.curse, CoACurses::REMINDER_LEAD_MS, true);
@@ -339,6 +349,7 @@ namespace CoAChallenges
                         break;
                 }
             }
+            return announced;
         }
 
         bool IsCurseFamilySpell(uint32 spell)
@@ -470,7 +481,15 @@ namespace CoAChallenges
             if (state.absentForDamage)
                 reflections.clear();
         }
-        Execute(player, actions);
+        std::vector<AnnouncementSent> const announced = Execute(player, actions);
+        if (!announced.empty())
+        {
+            std::lock_guard<std::mutex> lock(CursesMutex);
+            auto it = CursesStates.find(guid);
+            if (it != CursesStates.end())
+                for (AnnouncementSent const& sent : announced)
+                    it->second.lanes[LaneIndex(sent.lane)].OnAnnouncementSent(sent.serial, sent.sentMs);
+        }
         for (int32 amount : reflections)
             DealReflection(player, amount);
     }

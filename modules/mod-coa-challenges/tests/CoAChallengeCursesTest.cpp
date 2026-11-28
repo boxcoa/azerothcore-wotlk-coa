@@ -544,3 +544,30 @@ TEST(CoACurses, Probe_OnlyCounterZeroStartsANewSequence)
     probes.OnRequestSent(2, 35000);
     EXPECT_EQ(probes.sequence, 2u);
 }
+
+TEST(CoACurses, LaneClock_WarningStartsWhenTheAnnouncementIsSent)
+{
+    LaneClock clock;
+    clock.Begin(FindCurse(901841), 1000);
+    clock.OnAnnouncementSent(clock.warningSerial, 7000);
+
+    EXPECT_FALSE(Has(clock.Step(10000, true, 11000), Event::Remind));
+    std::vector<Event> reminder = clock.Step(6000, true, 17000);
+    EXPECT_TRUE(Has(reminder, Event::Remind));
+    clock.OnProofSent(3, 17000);
+    clock.OnProofReply(3);
+    EXPECT_FALSE(Has(clock.Step(4999, true, 21999), Event::Cast));
+    EXPECT_TRUE(Has(clock.Step(1, true, 22000), Event::Cast));
+}
+
+TEST(CoACurses, LaneClock_LateSendOfAnOlderAnnouncementIsIgnored)
+{
+    LaneClock clock;
+    clock.Begin(FindCurse(901841), 0);
+    uint32_t const first = clock.warningSerial;
+    clock.OnReturn(5000);
+    clock.OnAnnouncementSent(first, 9000);
+    EXPECT_EQ(clock.windowStartMs, 5000u);
+    clock.OnAnnouncementSent(clock.warningSerial, 4000);
+    EXPECT_EQ(clock.windowStartMs, 5000u);
+}
