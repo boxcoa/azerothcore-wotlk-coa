@@ -377,6 +377,21 @@ namespace CoAChallenges
             player->DealSpellDamage(&damage, true);
         }
 
+        uint32 DamageAfterDuelFloor(Player const* attacker, Unit const* victim, uint32 damage)
+        {
+            uint32 const health = victim->GetHealth();
+            if (!health || !damage)
+                return 0;
+            Player const* duelist = victim->ToPlayer();
+            bool const vehicle = !duelist && victim->IsVehicle() && victim->GetCharmer();
+            if (vehicle)
+                duelist = victim->GetCharmer()->ToPlayer();
+            if (duelist && duelist->duel && (!vehicle || duelist->duel->IsMounted)
+                && duelist->duel->Opponent == attacker && damage >= health - 1)
+                return health - 1;
+            return std::min(damage, health);
+        }
+
         CursedState* FindState(Player* player)
         {
             auto it = CursesStates.find(player->GetGUID().GetCounter());
@@ -547,10 +562,7 @@ namespace CoAChallenges
         Player* player = attacker->ToPlayer();
         if (Player const* target = victim->ToPlayer(); target && target->GetCommandStatus(CHEAT_GOD))
             return;
-        uint32 dealt = std::min<uint32>(damage, victim->GetHealth());
-        if (Player const* target = victim->ToPlayer())
-            if (target->duel && target->duel->Opponent == player && damage >= victim->GetHealth() && dealt)
-                dealt = victim->GetHealth() - 1;
+        uint32 const dealt = DamageAfterDuelFloor(player, victim, damage);
         int32 const amount = int32(uint64(dealt) * hit.share / 100);
         if (amount <= 0)
             return;
