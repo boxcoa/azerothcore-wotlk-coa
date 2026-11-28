@@ -1,0 +1,209 @@
+{
+  "schema": 1,
+  "name": "Cursed!: curse damage ignores Resilient Constitution",
+  "contract": [
+    "Issue #10788. Sun Clerics carry Resilient Constitution 552011, which halves player-caused damage in the",
+    "core's resilience step; a curse is self-cast, so it counted. Curse damage is dealt directly as a share of",
+    "max health. On level 20 Sun Clerics with the aura, Combustion 901876 deals 70% of max health over its 7",
+    "ticks and Storms deals 40% through two 20% hits of 901846, not the halved 35% and 20%."
+  ],
+  "timeout_ms": 300000,
+  "location": {
+    "map": 0,
+    "x": -9617.06,
+    "y": -288.949,
+    "z": 57.3053
+  },
+  "players": [
+    {
+      "id": "hero",
+      "race": 1,
+      "class": 27,
+      "level": 1,
+      "allow_regeneration": false
+    },
+    {
+      "id": "ally",
+      "race": 1,
+      "class": 27,
+      "level": 1,
+      "allow_regeneration": false
+    }
+  ],
+  "steps": [
+    {
+      "action": "start_challenge",
+      "actor": "hero",
+      "challenge": 617,
+      "level": 1
+    },
+    {
+      "action": "start_challenge",
+      "actor": "ally",
+      "challenge": 617,
+      "level": 1
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "challenge_start_code",
+      "equals": 0,
+      "within_ms": 3000,
+      "label": "the Cursed! trial activates for the first Sun Cleric"
+    },
+    {
+      "action": "assert",
+      "actor": "ally",
+      "metric": "challenge_start_code",
+      "equals": 0,
+      "within_ms": 3000,
+      "label": "the Cursed! trial activates for the second Sun Cleric"
+    },
+    {
+      "action": "set_level",
+      "actor": "hero",
+      "value": 20
+    },
+    {
+      "action": "set_level",
+      "actor": "ally",
+      "value": 20
+    },
+    {
+      "action": "wait",
+      "ms": 500
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "aura",
+      "spell": 552011,
+      "equals": 1,
+      "within_ms": 3000,
+      "label": "the first Sun Cleric has Resilient Constitution"
+    },
+    {
+      "action": "assert",
+      "actor": "ally",
+      "metric": "aura",
+      "spell": 552011,
+      "equals": 1,
+      "within_ms": 3000,
+      "label": "the second Sun Cleric has Resilient Constitution"
+    },
+    {
+      "action": "console",
+      "command": "coa cursed presence Harnessa present"
+    },
+    {
+      "action": "console",
+      "command": "coa cursed presence Harnessb present"
+    },
+    {
+      "action": "console",
+      "command": "coa cursed force Harnessa 901876"
+    },
+    {
+      "action": "console",
+      "command": "coa cursed force Harnessb 901845"
+    },
+    {
+      "action": "wait",
+      "ms": 16000
+    },
+    {
+      "action": "console",
+      "command": "coa cursed reply Harnessa major"
+    },
+    {
+      "action": "console",
+      "command": "coa cursed reply Harnessb major"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "aura",
+      "spell": 901876,
+      "equals": 1,
+      "within_ms": 6000,
+      "label": "Combustion lands"
+    },
+    {
+      "action": "assert",
+      "actor": "ally",
+      "metric": "aura",
+      "spell": 901845,
+      "equals": 1,
+      "within_ms": 6000,
+      "label": "Storms lands"
+    },
+    {
+      "action": "wait",
+      "ms": 18000
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "aura",
+      "spell": 901876,
+      "equals": 0,
+      "label": "Combustion has run out"
+    },
+    {
+      "action": "assert",
+      "actor": "ally",
+      "metric": "aura",
+      "spell": 901845,
+      "equals": 0,
+      "label": "Storms has run out"
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "max_health",
+      "save_as": "hero_max"
+    },
+    {
+      "action": "snapshot",
+      "actor": "ally",
+      "metric": "max_health",
+      "save_as": "ally_max"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_damage_total",
+      "spell": 901876,
+      "target": "hero",
+      "ratio_to": "hero_max",
+      "min": 0.69,
+      "max": 0.72,
+      "label": "Combustion deals 70% of max health despite Resilient Constitution"
+    },
+    {
+      "action": "assert",
+      "actor": "ally",
+      "metric": "spell_damage_total",
+      "spell": 901846,
+      "target": "ally",
+      "ratio_to": "ally_max",
+      "min": 0.39,
+      "max": 0.41,
+      "label": "Storms deals 40% of max health despite Resilient Constitution"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "alive",
+      "equals": 1,
+      "label": "the first Sun Cleric survives"
+    },
+    {
+      "action": "assert",
+      "actor": "ally",
+      "metric": "alive",
+      "equals": 1,
+      "label": "the second Sun Cleric survives"
+    }
+  ]
+}

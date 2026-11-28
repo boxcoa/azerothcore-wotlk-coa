@@ -13,6 +13,7 @@ namespace CoAChallenges
         constexpr uint32 CURSED_CHALLENGE = 617;
         constexpr uint32 CURSED_PRESTIGE_CHALLENGE = 618;
         constexpr uint32 REFLECTION_DAMAGE_SPELL = 901856;
+        constexpr uint32 ASCENSION_PCT_DAMAGE_EFFECT = 174;
         constexpr uint32 WHISPERS_PICK = 901869;
         constexpr uint32 WHISPERS_VISION = 901860;
         constexpr uint32 SICKNESS_PICK = 901812;
@@ -46,6 +47,7 @@ namespace CoAChallenges
             uint32 mapId = 0;
             uint32 instanceId = 0;
             std::vector<int32> reflections;
+            std::vector<std::pair<uint32, int32>> curseDamage;
         };
 
         struct CurseAction
@@ -349,21 +351,43 @@ namespace CoAChallenges
             return false;
         }
 
-        bool SuppressCurseDamage(Unit* target, Unit* attacker, SpellInfo const* spellInfo)
+        int32 CurseDamageAmount(Unit const* target, SpellInfo const* spellInfo, int32 coreAmount)
+        {
+            uint64 const maxHealth = target->GetMaxHealth();
+            for (SpellEffectInfo const& effect : spellInfo->Effects)
+            {
+                int32 const pct = std::max(0, effect.CalcValue());
+                if (effect.Effect == SPELL_EFFECT_APPLY_AURA
+                    && effect.ApplyAuraName == SPELL_AURA_PERIODIC_DAMAGE_PERCENT)
+                    return int32((maxHealth * uint64(pct) + 99) / 100);
+                if (effect.Effect == SpellEffects(ASCENSION_PCT_DAMAGE_EFFECT) && effect.MiscValue == 0)
+                    return int32(maxHealth * uint64(pct) / 100);
+            }
+            return coreAmount;
+        }
+
+        bool TakeOverCurseDamage(Unit* target, Unit* attacker, SpellInfo const* spellInfo, int32 coreAmount)
         {
             if (!target || target != attacker || !spellInfo || !target->IsPlayer())
                 return false;
             if (CursesStateCount.load(std::memory_order_relaxed) == 0 || !IsCurseFamilySpell(spellInfo->Id))
                 return false;
-            return CursesPlayerAbsent(target->ToPlayer());
+            Player* player = target->ToPlayer();
+            std::lock_guard<std::mutex> lock(CursesMutex);
+            auto it = CursesStates.find(player->GetGUID().GetCounter());
+            if (it == CursesStates.end())
+                return false;
+            if (!AbsentForDamageNow(player, it->second))
+                it->second.curseDamage.emplace_back(spellInfo->Id, CurseDamageAmount(target, spellInfo, coreAmount));
+            return true;
         }
 
-        void DealReflection(Player* player, int32 amount)
+        void DealDirect(Player* player, uint32 spell, int32 amount, bool checkImmunity)
         {
-            SpellInfo const* info = sSpellMgr->GetSpellInfo(REFLECTION_DAMAGE_SPELL);
+            SpellInfo const* info = sSpellMgr->GetSpellInfo(spell);
             if (!info || amount <= 0 || !player->IsAlive())
                 return;
-            if (player->IsImmunedToDamage(player, info))
+            if (checkImmunity && player->IsImmunedToDamage(player, info))
                 return;
             SpellNonMeleeDamage damage(player, player, info, info->GetSchoolMask());
             damage.damage = uint32(amount);
@@ -417,6 +441,7 @@ namespace CoAChallenges
 
         std::vector<CurseAction> actions;
         std::vector<int32> reflections;
+        std::vector<std::pair<uint32, int32>> curseDamage;
         {
             std::lock_guard<std::mutex> lock(CursesMutex);
             CursedState& state = CursesStates[guid];
@@ -467,12 +492,18 @@ namespace CoAChallenges
             }
             state.wasPresent = present;
             reflections.swap(state.reflections);
+            curseDamage.swap(state.curseDamage);
             if (state.absentForDamage)
+            {
                 reflections.clear();
+                curseDamage.clear();
+            }
         }
         Execute(player, actions);
+        for (auto const& [spell, amount] : curseDamage)
+            DealDirect(player, spell, amount, false);
         for (int32 amount : reflections)
-            DealReflection(player, amount);
+            DealDirect(player, REFLECTION_DAMAGE_SPELL, amount, true);
     }
 
     void CursesOnLogin(Player* player)
@@ -533,13 +564,13 @@ namespace CoAChallenges
 
     void CursesModifyDamageTaken(Unit* target, Unit* attacker, int32& damage, SpellInfo const* spellInfo)
     {
-        if (damage > 0 && SuppressCurseDamage(target, attacker, spellInfo))
+        if (damage > 0 && TakeOverCurseDamage(target, attacker, spellInfo, damage))
             damage = 0;
     }
 
     void CursesModifyPeriodicTick(Unit* target, Unit* attacker, uint32& damage, SpellInfo const* spellInfo)
     {
-        if (damage > 0 && SuppressCurseDamage(target, attacker, spellInfo))
+        if (damage > 0 && TakeOverCurseDamage(target, attacker, spellInfo, int32(damage)))
             damage = 0;
     }
 
