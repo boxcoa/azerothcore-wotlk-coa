@@ -172,6 +172,176 @@ namespace CoACurses
         }
         return 20000;
     }
+
+    inline constexpr uint32_t REMINDER_LEAD_MS = 5000;
+    inline constexpr uint32_t FIRST_RETURN_MIN_MS = 10000;
+    inline constexpr uint32_t LATER_RETURN_MIN_MS = 5000;
+    inline constexpr uint32_t SILENCE_MS = 10000;
+    inline constexpr uint32_t GAP_MIN_MS = 30000;
+    inline constexpr uint32_t GAP_MAX_MS = 60000;
+
+    enum class Phase : uint8_t
+    {
+        Gap,
+        Warning,
+        Active
+    };
+
+    enum class Event : uint8_t
+    {
+        None,
+        Roll,
+        Announce,
+        Remind,
+        RequestProof,
+        Cast
+    };
+
+    struct LaneClock
+    {
+        Phase phase = Phase::Gap;
+        uint32_t gapLeftMs = 0;
+        Curse const* curse = nullptr;
+        uint32_t remainingMs = 0;
+        uint32_t servedMs = 0;
+        uint32_t reminderAgeMs = 0;
+        bool reminderSent = false;
+        bool proven = false;
+        uint32_t returns = 0;
+        std::optional<uint32_t> proofCounter;
+
+        void StartGap(uint32_t gapMs)
+        {
+            phase = Phase::Gap;
+            gapLeftMs = gapMs;
+            curse = nullptr;
+            ResetWarning();
+            returns = 0;
+        }
+
+        std::vector<Event> Begin(Curse const* rolled)
+        {
+            phase = Phase::Warning;
+            curse = rolled;
+            remainingMs = WarningMs(rolled->tier);
+            servedMs = 0;
+            returns = 0;
+            ResetWarning();
+            return Announcement();
+        }
+
+        std::vector<Event> Step(uint32_t diffMs, bool present)
+        {
+            std::vector<Event> events;
+            if (!present)
+                return events;
+
+            if (phase == Phase::Gap)
+            {
+                if (gapLeftMs > diffMs)
+                {
+                    gapLeftMs -= diffMs;
+                    return events;
+                }
+                gapLeftMs = 0;
+                events.push_back(Event::Roll);
+                return events;
+            }
+
+            if (phase != Phase::Warning)
+                return events;
+
+            bool const reminderWasSent = reminderSent;
+            servedMs += diffMs;
+            remainingMs = remainingMs > diffMs ? remainingMs - diffMs : 0;
+            if (reminderWasSent)
+                reminderAgeMs += diffMs;
+            else if (remainingMs <= REMINDER_LEAD_MS)
+            {
+                reminderSent = true;
+                reminderAgeMs = 0;
+                events.push_back(Event::Remind);
+                events.push_back(Event::RequestProof);
+            }
+
+            if (reminderWasSent && reminderAgeMs >= REMINDER_LEAD_MS && proven)
+            {
+                phase = Phase::Active;
+                events.push_back(Event::Cast);
+            }
+            return events;
+        }
+
+        void OnProofSent(uint32_t counter)
+        {
+            proofCounter = counter;
+        }
+
+        void OnProofReply(uint32_t counter)
+        {
+            if (proofCounter && *proofCounter == counter)
+                proven = true;
+        }
+
+        std::vector<Event> OnReturn()
+        {
+            if (phase != Phase::Warning)
+                return {};
+            ++returns;
+            uint32_t const minimum = returns == 1 ? FIRST_RETURN_MIN_MS : LATER_RETURN_MIN_MS;
+            if (remainingMs < minimum)
+                remainingMs = minimum;
+            ResetWarning();
+            return Announcement();
+        }
+
+        void OnEnded(uint32_t gapMs)
+        {
+            StartGap(gapMs);
+        }
+
+    private:
+        void ResetWarning()
+        {
+            reminderAgeMs = 0;
+            reminderSent = false;
+            proven = false;
+            proofCounter.reset();
+        }
+
+        std::vector<Event> Announcement()
+        {
+            std::vector<Event> events = { Event::Announce };
+            if (remainingMs <= REMINDER_LEAD_MS)
+            {
+                reminderSent = true;
+                reminderAgeMs = 0;
+                events.push_back(Event::RequestProof);
+            }
+            return events;
+        }
+    };
+
+    struct PresenceInput
+    {
+        bool inWorld = false;
+        bool farTeleport = false;
+        bool taxi = false;
+        bool vehicle = false;
+        bool loginReady = false;
+        uint32_t msSinceLastPacket = 0;
+    };
+
+    inline bool CountdownRuns(PresenceInput const& in)
+    {
+        return in.inWorld && !in.farTeleport && !in.taxi && !in.vehicle && in.loginReady
+            && in.msSinceLastPacket < SILENCE_MS;
+    }
+
+    inline bool DamageSuppressed(PresenceInput const& in)
+    {
+        return in.farTeleport || in.msSinceLastPacket >= SILENCE_MS;
+    }
 }
 
 #endif
