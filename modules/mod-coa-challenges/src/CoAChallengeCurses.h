@@ -2,6 +2,7 @@
 #define MOD_COA_CHALLENGES_CURSES_H
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <span>
@@ -208,6 +209,7 @@ namespace CoACurses
         uint32_t reminderAgeMs = 0;
         bool reminderSent = false;
         bool proven = false;
+        bool holdNextStep = false;
         uint32_t returns = 0;
         std::optional<uint32_t> proofCounter;
 
@@ -252,6 +254,12 @@ namespace CoACurses
             if (phase != Phase::Warning)
                 return events;
 
+            if (holdNextStep)
+            {
+                holdNextStep = false;
+                return events;
+            }
+
             bool const reminderWasSent = reminderSent;
             servedMs += diffMs;
             remainingMs = remainingMs > diffMs ? remainingMs - diffMs : 0;
@@ -293,6 +301,7 @@ namespace CoACurses
             if (remainingMs < minimum)
                 remainingMs = minimum;
             ResetWarning();
+            holdNextStep = true;
             return Announcement();
         }
 
@@ -307,6 +316,7 @@ namespace CoACurses
             reminderAgeMs = 0;
             reminderSent = false;
             proven = false;
+            holdNextStep = false;
             proofCounter.reset();
         }
 
@@ -338,11 +348,7 @@ namespace CoACurses
             {
                 if (outstanding[i].first != counter)
                     continue;
-                uint64_t const sentAt = outstanding[i].second;
-                std::erase_if(outstanding, [sentAt](std::pair<uint32_t, uint64_t> const& request)
-                    {
-                        return request.second <= sentAt;
-                    });
+                outstanding.erase(outstanding.begin(), outstanding.begin() + std::ptrdiff_t(i + 1));
                 return true;
             }
             return false;

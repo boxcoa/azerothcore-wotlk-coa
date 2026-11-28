@@ -239,6 +239,8 @@ TEST(CoACurses, LaneClock_RelogWindows)
     EXPECT_TRUE(Has(first, Event::Announce));
     EXPECT_FALSE(late.reminderSent);
 
+    EXPECT_TRUE(late.Step(9000, true).empty());
+    EXPECT_EQ(late.remainingMs, 10000u);
     late.Step(9000, true);
     std::vector<Event> second = late.OnReturn();
     EXPECT_EQ(late.remainingMs, 5000u);
@@ -248,8 +250,35 @@ TEST(CoACurses, LaneClock_RelogWindows)
 
     late.OnProofSent(11);
     late.OnProofReply(11);
+    EXPECT_FALSE(Has(late.Step(5000, true), Event::Cast));
     EXPECT_FALSE(Has(late.Step(4999, true), Event::Cast));
     EXPECT_TRUE(Has(late.Step(1, true), Event::Cast));
+}
+
+TEST(CoACurses, LaneClock_ReturnOnLargeUpdateKeepsFullWindow)
+{
+    LaneClock first;
+    first.Begin(FindCurse(901871));
+    first.Step(18000, true);
+    first.OnReturn();
+    EXPECT_TRUE(first.Step(30000, true).empty());
+    EXPECT_EQ(first.remainingMs, 10000u);
+    EXPECT_FALSE(first.reminderSent);
+
+    LaneClock later;
+    later.Begin(FindCurse(901871));
+    later.Step(18000, true);
+    later.OnReturn();
+    later.Step(1, true);
+    later.Step(9500, true);
+    std::vector<Event> back = later.OnReturn();
+    EXPECT_TRUE(Has(back, Event::RequestProof));
+    later.OnProofSent(21);
+    EXPECT_TRUE(later.Step(5000, true).empty());
+    EXPECT_EQ(later.reminderAgeMs, 0u);
+    later.OnProofReply(21);
+    EXPECT_FALSE(Has(later.Step(4999, true), Event::Cast));
+    EXPECT_TRUE(Has(later.Step(1, true), Event::Cast));
 }
 
 TEST(CoACurses, LaneClock_TierFixedAtRoll)
@@ -324,6 +353,19 @@ TEST(CoACurses, Presence_UnansweredRequestKeepsDeadline)
     in.oldestUnansweredMs = probes.OldestUnansweredMs(12000);
     EXPECT_TRUE(CountdownRuns(in));
     EXPECT_FALSE(DamageSuppressed(in));
+}
+
+TEST(CoACurses, Probe_SameTimestampRepliesRetireBySendOrder)
+{
+    ProbeTracker probes;
+    probes.OnRequestSent(1, 100);
+    probes.OnRequestSent(2, 100);
+    EXPECT_TRUE(probes.OnReply(1));
+    ASSERT_EQ(probes.outstanding.size(), 1u);
+    EXPECT_EQ(probes.outstanding.front().first, 2u);
+    EXPECT_EQ(probes.OldestUnansweredMs(10100), 10000u);
+    EXPECT_TRUE(probes.OnReply(2));
+    EXPECT_TRUE(probes.outstanding.empty());
 }
 
 TEST(CoACurses, Presence_TaxiAndVehiclePauseButDoNotSuppress)
