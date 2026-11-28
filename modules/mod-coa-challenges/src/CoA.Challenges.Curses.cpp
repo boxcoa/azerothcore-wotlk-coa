@@ -85,6 +85,11 @@ namespace CoAChallenges
             return uint64(GameTime::GetGameTimeMS().count());
         }
 
+        uint64 LiveMs()
+        {
+            return uint64(std::chrono::duration_cast<Milliseconds>(GameTime::SteadyNow().time_since_epoch()).count());
+        }
+
         uint32 RandomGapMs()
         {
             return urand(CoACurses::GAP_MIN_MS, CoACurses::GAP_MAX_MS);
@@ -429,7 +434,7 @@ namespace CoAChallenges
                     continue;
                 }
 
-                std::vector<CoACurses::Event> const events = clock.Step(diff, present);
+                std::vector<CoACurses::Event> const events = clock.Step(diff, present, LiveMs());
                 for (CoACurses::Event event : events)
                 {
                     if (event != CoACurses::Event::Roll)
@@ -477,7 +482,7 @@ namespace CoAChallenges
         if (t_proofTarget.active && t_proofTarget.guid == guid)
         {
             CoACurses::LaneClock& clock = it->second.lanes[LaneIndex(t_proofTarget.lane)];
-            clock.OnProofSent(counter);
+            clock.OnProofSent(counter, LiveMs());
             clock.proofSequence = it->second.probes.sequence;
         }
     }

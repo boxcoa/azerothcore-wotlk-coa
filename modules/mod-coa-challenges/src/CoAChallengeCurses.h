@@ -206,7 +206,7 @@ namespace CoACurses
         Curse const* curse = nullptr;
         uint32_t remainingMs = 0;
         uint32_t servedMs = 0;
-        uint32_t reminderAgeMs = 0;
+        std::optional<uint64_t> proofSentMs;
         bool reminderSent = false;
         bool proven = false;
         bool holdNextStep = false;
@@ -234,7 +234,7 @@ namespace CoACurses
             return Announcement();
         }
 
-        std::vector<Event> Step(uint32_t diffMs, bool present)
+        std::vector<Event> Step(uint32_t diffMs, bool present, uint64_t nowMs)
         {
             std::vector<Event> events;
             if (!present)
@@ -264,17 +264,14 @@ namespace CoACurses
             bool const reminderWasSent = reminderSent;
             servedMs += diffMs;
             remainingMs = remainingMs > diffMs ? remainingMs - diffMs : 0;
-            if (reminderWasSent)
-                reminderAgeMs += diffMs;
-            else if (remainingMs <= REMINDER_LEAD_MS)
+            if (!reminderWasSent && remainingMs <= REMINDER_LEAD_MS)
             {
                 reminderSent = true;
-                reminderAgeMs = 0;
                 events.push_back(Event::Remind);
                 events.push_back(Event::RequestProof);
             }
 
-            if (reminderWasSent && reminderAgeMs >= REMINDER_LEAD_MS && proven)
+            if (reminderWasSent && proven && proofSentMs && nowMs >= *proofSentMs + REMINDER_LEAD_MS)
             {
                 phase = Phase::Active;
                 events.push_back(Event::Cast);
@@ -282,9 +279,10 @@ namespace CoACurses
             return events;
         }
 
-        void OnProofSent(uint32_t counter)
+        void OnProofSent(uint32_t counter, uint64_t sentMs)
         {
             proofCounter = counter;
+            proofSentMs = sentMs;
         }
 
         void OnProofReply(uint32_t counter)
@@ -314,11 +312,11 @@ namespace CoACurses
     private:
         void ResetWarning()
         {
-            reminderAgeMs = 0;
             reminderSent = false;
             proven = false;
             holdNextStep = false;
             proofCounter.reset();
+            proofSentMs.reset();
         }
 
         std::vector<Event> Announcement()
@@ -327,7 +325,6 @@ namespace CoACurses
             if (remainingMs <= REMINDER_LEAD_MS)
             {
                 reminderSent = true;
-                reminderAgeMs = 0;
                 events.push_back(Event::RequestProof);
             }
             return events;
