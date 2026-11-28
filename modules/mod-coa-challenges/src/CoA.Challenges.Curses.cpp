@@ -670,6 +670,16 @@ namespace CoAChallenges
             handler->SendErrorMessage("Cursed: reply must be minor, major or unrelated.");
             return false;
         }
+        bool tracked = false;
+        {
+            std::lock_guard<std::mutex> lock(CursesMutex);
+            tracked = FindState(player) != nullptr;
+        }
+        if (!tracked)
+        {
+            handler->SendErrorMessage("Cursed: '{}' is not on a Cursed! run.", target.GetName());
+            return false;
+        }
         if (which == "unrelated" && player->GetSession())
             player->GetSession()->SendTimeSync();
 
