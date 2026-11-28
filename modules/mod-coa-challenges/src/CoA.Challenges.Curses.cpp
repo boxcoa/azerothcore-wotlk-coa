@@ -526,8 +526,11 @@ namespace CoAChallenges
             {
                 found = true;
                 state->forced[index] = spell;
-                if (state->lanes[index].phase == CoACurses::Phase::Gap)
-                    state->lanes[index].gapLeftMs = 0;
+                CoACurses::LaneClock& clock = state->lanes[index];
+                if (clock.phase == CoACurses::Phase::Gap)
+                    clock.gapLeftMs = 0;
+                else if (clock.phase == CoACurses::Phase::Warning)
+                    clock.StartGap(0);
             }
         }
         if (!found)
