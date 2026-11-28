@@ -454,6 +454,7 @@ namespace CoAChallenges
         state.loginReady = false;
         state.wasPresent = false;
         state.session = player->GetSession();
+        state.probes.OnRequestSent(0, NowMs());
     }
 
     void CursesOnPacketSent(WorldSession* session, WorldPacket const& packet)
