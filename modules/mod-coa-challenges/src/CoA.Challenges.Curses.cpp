@@ -536,6 +536,8 @@ namespace CoAChallenges
         if (!hit.share || hit.attacker != attacker || hit.victim != victim || !damage)
             return;
         Player* player = attacker->ToPlayer();
+        if (Player const* target = victim->ToPlayer(); target && target->GetCommandStatus(CHEAT_GOD))
+            return;
         uint32 dealt = std::min<uint32>(damage, victim->GetHealth());
         if (Player const* target = victim->ToPlayer())
             if (target->duel && target->duel->Opponent == player && damage >= victim->GetHealth() && dealt)
