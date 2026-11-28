@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <optional>
 #include <span>
+#include <utility>
 #include <vector>
 
 namespace CoACurses
@@ -322,6 +323,43 @@ namespace CoACurses
         }
     };
 
+    struct ProbeTracker
+    {
+        std::vector<std::pair<uint32_t, uint64_t>> outstanding;
+
+        void OnRequestSent(uint32_t counter, uint64_t nowMs)
+        {
+            outstanding.emplace_back(counter, nowMs);
+        }
+
+        bool OnReply(uint32_t counter)
+        {
+            for (size_t i = 0; i < outstanding.size(); ++i)
+            {
+                if (outstanding[i].first != counter)
+                    continue;
+                uint64_t const sentAt = outstanding[i].second;
+                std::erase_if(outstanding, [sentAt](std::pair<uint32_t, uint64_t> const& request)
+                    {
+                        return request.second <= sentAt;
+                    });
+                return true;
+            }
+            return false;
+        }
+
+        uint32_t OldestUnansweredMs(uint64_t nowMs) const
+        {
+            if (outstanding.empty())
+                return 0;
+            uint64_t oldest = outstanding.front().second;
+            for (auto const& request : outstanding)
+                if (request.second < oldest)
+                    oldest = request.second;
+            return nowMs > oldest ? uint32_t(nowMs - oldest) : 0;
+        }
+    };
+
     struct PresenceInput
     {
         bool inWorld = false;
@@ -329,18 +367,18 @@ namespace CoACurses
         bool taxi = false;
         bool vehicle = false;
         bool loginReady = false;
-        uint32_t msSinceLastPacket = 0;
+        uint32_t oldestUnansweredMs = 0;
     };
 
     inline bool CountdownRuns(PresenceInput const& in)
     {
         return in.inWorld && !in.farTeleport && !in.taxi && !in.vehicle && in.loginReady
-            && in.msSinceLastPacket < SILENCE_MS;
+            && in.oldestUnansweredMs < SILENCE_MS;
     }
 
     inline bool DamageSuppressed(PresenceInput const& in)
     {
-        return in.farTeleport || in.msSinceLastPacket >= SILENCE_MS;
+        return in.farTeleport || in.oldestUnansweredMs >= SILENCE_MS;
     }
 }
 

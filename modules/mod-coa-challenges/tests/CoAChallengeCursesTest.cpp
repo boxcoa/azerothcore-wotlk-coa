@@ -274,26 +274,56 @@ TEST(CoACurses, LaneClock_EndedStartsGap)
     EXPECT_FALSE(clock.proofCounter.has_value());
 }
 
-TEST(CoACurses, Presence_StationaryClientStaysEligible)
+TEST(CoACurses, Presence_PromptRepliesStayPresentDespiteJitter)
 {
+    ProbeTracker probes;
     PresenceInput in;
     in.inWorld = true;
     in.loginReady = true;
-    for (int cycle = 0; cycle < 5; ++cycle)
+
+    uint64_t const sends[] = { 0, 10000, 20000, 30000, 40000 };
+    uint64_t const replies[] = { 40, 10090, 20015, 30120, 40010 };
+    for (size_t i = 0; i < 5; ++i)
     {
-        in.msSinceLastPacket = 9999;
+        probes.OnRequestSent(uint32_t(i), sends[i]);
+        in.oldestUnansweredMs = probes.OldestUnansweredMs(sends[i] + 1);
+        EXPECT_TRUE(CountdownRuns(in));
+        EXPECT_TRUE(probes.OnReply(uint32_t(i)));
+        in.oldestUnansweredMs = probes.OldestUnansweredMs(replies[i]);
         EXPECT_TRUE(CountdownRuns(in));
         EXPECT_FALSE(DamageSuppressed(in));
-        in.msSinceLastPacket = 0;
-        EXPECT_TRUE(CountdownRuns(in));
     }
-    in.msSinceLastPacket = 10000;
+    EXPECT_GT(replies[3] - replies[2], 10000u);
+    in.oldestUnansweredMs = probes.OldestUnansweredMs(replies[3] + 10005);
+    EXPECT_TRUE(CountdownRuns(in));
+}
+
+TEST(CoACurses, Presence_UnansweredRequestKeepsDeadline)
+{
+    ProbeTracker probes;
+    PresenceInput in;
+    in.inWorld = true;
+    in.loginReady = true;
+
+    probes.OnRequestSent(5, 0);
+    in.oldestUnansweredMs = probes.OldestUnansweredMs(9999);
+    EXPECT_TRUE(CountdownRuns(in));
+
+    probes.OnRequestSent(6, 5000);
+    in.oldestUnansweredMs = probes.OldestUnansweredMs(10000);
+    EXPECT_EQ(in.oldestUnansweredMs, 10000u);
     EXPECT_FALSE(CountdownRuns(in));
     EXPECT_TRUE(DamageSuppressed(in));
 
-    in.msSinceLastPacket = 0;
-    in.loginReady = false;
+    EXPECT_FALSE(probes.OnReply(99));
+    in.oldestUnansweredMs = probes.OldestUnansweredMs(11000);
     EXPECT_FALSE(CountdownRuns(in));
+
+    EXPECT_TRUE(probes.OnReply(6));
+    EXPECT_TRUE(probes.outstanding.empty());
+    in.oldestUnansweredMs = probes.OldestUnansweredMs(12000);
+    EXPECT_TRUE(CountdownRuns(in));
+    EXPECT_FALSE(DamageSuppressed(in));
 }
 
 TEST(CoACurses, Presence_TaxiAndVehiclePauseButDoNotSuppress)
