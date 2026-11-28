@@ -3,7 +3,8 @@
   "name": "Cursed!: Hemophilia is never rolled while Starvation is pending",
   "contract": [
     "Issue #10788. The damage cap applies in both orders. While Starvation 901871 is announced in the",
-    "major lane, a forced Hemophilia 901827 in the minor lane is replaced by another tier 2 curse."
+    "major lane, a forced Hemophilia 901827 in the minor lane is replaced by another tier 2 curse,",
+    "which lands; Hemophilia itself never does."
   ],
   "timeout_ms": 300000,
   "location": {
@@ -80,6 +81,10 @@
     {
       "action": "wait",
       "ms": 6000
+    },
+    {
+      "action": "console",
+      "command": "coa cursed expect Harnessa minor active hindrance"
     },
     {
       "action": "assert",

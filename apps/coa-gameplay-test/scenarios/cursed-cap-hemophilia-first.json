@@ -4,7 +4,7 @@
   "contract": [
     "Issue #10788. The damage cap keeps the two lanes' damage below 100% of max health. Hemophilia",
     "901827 (12%) is active in the minor lane, so a forced Starvation 901871 (90%) is replaced by another",
-    "lethal curse; Starvation itself never lands."
+    "lethal curse, which lands in the major lane; Starvation itself never lands."
   ],
   "timeout_ms": 300000,
   "location": {
@@ -94,6 +94,10 @@
     {
       "action": "wait",
       "ms": 6000
+    },
+    {
+      "action": "console",
+      "command": "coa cursed expect Harnessa major active lethal"
     },
     {
       "action": "assert",

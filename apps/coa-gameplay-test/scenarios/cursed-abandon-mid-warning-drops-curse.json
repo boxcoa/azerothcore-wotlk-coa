@@ -2,8 +2,9 @@
   "schema": 1,
   "name": "Cursed!: stopping the trial during a warning drops the pending curse",
   "contract": [
-    "Issue #10788. The cycle runs only during an active Cursed! run. Narcolepsy 901841 is announced,",
-    "the trial is stopped 3 s into the warning, and the curse never lands."
+    "Issue #10788. The cycle runs only during an active Cursed! run. Narcolepsy 901841's proof reply is",
+    "sent 1 s after its reminder, so only the 5 s window still holds it; the trial is stopped 1 s later",
+    "and the curse never lands, although it would have 3 s after the stop."
   ],
   "timeout_ms": 300000,
   "location": {
@@ -63,7 +64,15 @@
     },
     {
       "action": "wait",
-      "ms": 3000
+      "ms": 11000
+    },
+    {
+      "action": "console",
+      "command": "coa cursed reply Harnessa major"
+    },
+    {
+      "action": "wait",
+      "ms": 1000
     },
     {
       "action": "stop_challenge",

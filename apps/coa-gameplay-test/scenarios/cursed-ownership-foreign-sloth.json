@@ -1,10 +1,10 @@
 {
   "schema": 1,
-  "name": "Cursed!: a pool spell that the trial did not cast does not occupy a lane",
+  "name": "Cursed!: a pool spell that another unit cast does not occupy a lane",
   "contract": [
-    "Issue #10788. Lanes are busy only for curses the trial cast. Curse of Sloth 901801 applied as a",
-    "fixture after the trial started (as the RFC Taragaman scenario reuses it) does not stop the minor",
-    "lane from announcing and landing a forced Shortening 901844."
+    "Issue #10788. Lanes are busy only for curses the trial cast on the player. Curse of Sloth 901801",
+    "applied by another player before the trial starts is seen when the lanes are built and ignored:",
+    "the minor lane starts in a gap and lands a forced Shortening 901844 beside the foreign Sloth."
   ],
   "timeout_ms": 300000,
   "location": {
@@ -19,9 +19,22 @@
       "race": 1,
       "class": 1,
       "level": 1
+    },
+    {
+      "id": "helper",
+      "race": 1,
+      "class": 1,
+      "level": 1
     }
   ],
   "steps": [
+    {
+      "action": "set_aura",
+      "actor": "hero",
+      "spell": 901801,
+      "stacks": 1,
+      "caster": "helper"
+    },
     {
       "action": "start_challenge",
       "actor": "hero",
@@ -54,29 +67,24 @@
       "command": "coa cursed presence Harnessa present"
     },
     {
-      "action": "set_aura",
+      "action": "assert",
       "actor": "hero",
+      "metric": "aura",
       "spell": 901801,
-      "stacks": 1
+      "equals": 1,
+      "label": "the foreign Sloth is on the player"
     },
     {
-      "action": "snapshot",
-      "actor": "hero",
-      "metric": "system_messages",
-      "save_as": "sloth"
+      "action": "console",
+      "command": "coa cursed expect Harnessa minor gap"
     },
     {
       "action": "console",
       "command": "coa cursed force Harnessa 901844"
     },
     {
-      "action": "assert",
-      "actor": "hero",
-      "metric": "system_messages",
-      "relative_to": "sloth",
-      "label": "the minor lane still announces a curse",
-      "min": 1,
-      "within_ms": 2000
+      "action": "wait",
+      "ms": 1000
     },
     {
       "action": "console",
@@ -88,7 +96,7 @@
       "metric": "aura",
       "spell": 901844,
       "equals": 1,
-      "label": "Shortening lands beside the fixture Sloth",
+      "label": "Shortening lands beside the foreign Sloth",
       "within_ms": 6000
     }
   ]
