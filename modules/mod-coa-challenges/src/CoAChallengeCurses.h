@@ -333,6 +333,12 @@ namespace CoACurses
         }
     };
 
+    struct ReplyResult
+    {
+        bool matched = false;
+        bool late = false;
+    };
+
     struct ProbeTracker
     {
         std::vector<std::pair<uint32_t, uint64_t>> outstanding;
@@ -359,6 +365,14 @@ namespace CoACurses
                 return true;
             }
             return false;
+        }
+
+        ReplyResult OnReplyReceived(uint32_t counter, uint64_t receivedMs)
+        {
+            ReplyResult result;
+            result.late = DeadlinePassed(receivedMs);
+            result.matched = OnReply(counter);
+            return result;
         }
 
         uint32_t OldestUnansweredMs(uint64_t nowMs) const

@@ -437,3 +437,30 @@ TEST(CoACurses, Reflection_NestedDamageKeepsTheOuterHit)
     EXPECT_EQ(none.attacker, nullptr);
     EXPECT_EQ(none.share, 0u);
 }
+
+TEST(CoACurses, Probe_ReplyIsJudgedWhenReceivedNotWhenDispatched)
+{
+    ProbeTracker probes;
+    probes.OnRequestSent(4, 0);
+    ReplyResult const onTime = probes.OnReplyReceived(4, 9900);
+    EXPECT_TRUE(onTime.matched);
+    EXPECT_FALSE(onTime.late);
+    EXPECT_TRUE(probes.outstanding.empty());
+}
+
+TEST(CoACurses, Probe_LateReplyIsJudgedBeforeItRetiresTheRequest)
+{
+    ProbeTracker probes;
+    probes.OnRequestSent(5, 20000);
+    probes.OnRequestSent(6, 25000);
+    ReplyResult const late = probes.OnReplyReceived(6, 30000);
+    EXPECT_TRUE(late.matched);
+    EXPECT_TRUE(late.late);
+    EXPECT_TRUE(probes.outstanding.empty());
+
+    probes.OnRequestSent(7, 40000);
+    ReplyResult const unknown = probes.OnReplyReceived(9, 51000);
+    EXPECT_FALSE(unknown.matched);
+    EXPECT_TRUE(unknown.late);
+    EXPECT_EQ(probes.outstanding.size(), 1u);
+}

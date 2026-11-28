@@ -202,11 +202,21 @@ namespace CoAChallenges
                     actions.push_back({ LaneAt(index), event, clock.curse, clock.remainingMs });
         }
 
-        void ApplyReply(CursedState& state, uint32 counter)
+        uint64 ReceivedMs(WorldPacket const& packet)
         {
-            if (state.presence == PresenceOverride::Auto && state.probes.DeadlinePassed(NowMs()))
+            uint64 const now = NowMs();
+            TimePoint const received = packet.GetReceivedTime();
+            if (received == TimePoint() || received >= GameTime::Now())
+                return now;
+            uint64 const age = uint64(std::chrono::duration_cast<Milliseconds>(GameTime::Now() - received).count());
+            return now > age ? now - age : 0;
+        }
+
+        void ApplyReply(CursedState& state, uint32 counter, uint64 receivedMs)
+        {
+            CoACurses::ReplyResult const reply = state.probes.OnReplyReceived(counter, receivedMs);
+            if (state.presence == PresenceOverride::Auto && reply.late)
                 state.wasPresent = false;
-            state.probes.OnReply(counter);
             for (CoACurses::LaneClock& clock : state.lanes)
                 clock.OnProofReply(counter);
             state.loginReady = true;
@@ -475,7 +485,7 @@ namespace CoAChallenges
         if (opcode == CMSG_SET_ACTIVE_MOVER)
             it->second.loginReady = true;
         else if (packet.size() >= 4)
-            ApplyReply(it->second, packet.read<uint32>(0));
+            ApplyReply(it->second, packet.read<uint32>(0), ReceivedMs(packet));
     }
 
     bool CursesPlayerAbsent(Player const* player)
@@ -650,7 +660,7 @@ namespace CoAChallenges
                 else
                     requested = false;
                 if (requested)
-                    ApplyReply(*state, counter);
+                    ApplyReply(*state, counter, NowMs());
             }
         }
         if (!found)
