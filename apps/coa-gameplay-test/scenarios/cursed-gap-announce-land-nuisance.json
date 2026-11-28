@@ -2,9 +2,10 @@
   "schema": 1,
   "name": "Cursed!: the first curse waits for the gap, is announced, then lands after its warning",
   "contract": [
-    "Issue #10788. Each Cursed! lane waits a random 30-60 s gap before its first roll, so no curse",
-    "is announced in the first 28 s. A forced tier 1 curse (Shortening 901844) is announced at once, asks",
-    "for a time-sync proof with the announcement and lands 5 s later once the proof reply arrives."
+    "Issue #10788. Each Cursed! lane waits a random 30-60 s gap before its first roll, so none of the",
+    "25 curses the minor lane can roll at level 1 is cast in the first 28 s (the major lane is locked).",
+    "A forced tier 1 curse (Shortening 901844) is announced at once, asks for a time-sync proof with the",
+    "announcement and lands 5 s later once the proof reply arrives."
   ],
   "timeout_ms": 300000,
   "location": {
@@ -54,22 +55,214 @@
       "command": "coa cursed presence Harnessa present"
     },
     {
-      "action": "snapshot",
-      "actor": "hero",
-      "metric": "system_messages",
-      "save_as": "before"
-    },
-    {
       "action": "wait",
       "ms": 28000
     },
     {
       "action": "assert",
       "actor": "hero",
+      "metric": "spell_cast_count",
+      "spell": 901857,
+      "equals": 0,
+      "label": "no curse is cast during the first gap (901857)"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_cast_count",
+      "spell": 901858,
+      "equals": 0,
+      "label": "no curse is cast during the first gap (901858)"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_cast_count",
+      "spell": 901859,
+      "equals": 0,
+      "label": "no curse is cast during the first gap (901859)"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_cast_count",
+      "spell": 901860,
+      "equals": 0,
+      "label": "no curse is cast during the first gap (901860)"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_cast_count",
+      "spell": 901861,
+      "equals": 0,
+      "label": "no curse is cast during the first gap (901861)"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_cast_count",
+      "spell": 901844,
+      "equals": 0,
+      "label": "no curse is cast during the first gap (901844)"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_cast_count",
+      "spell": 901843,
+      "equals": 0,
+      "label": "no curse is cast during the first gap (901843)"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_cast_count",
+      "spell": 901840,
+      "equals": 0,
+      "label": "no curse is cast during the first gap (901840)"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_cast_count",
+      "spell": 901850,
+      "equals": 0,
+      "label": "no curse is cast during the first gap (901850)"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_cast_count",
+      "spell": 901808,
+      "equals": 0,
+      "label": "no curse is cast during the first gap (901808)"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_cast_count",
+      "spell": 901872,
+      "equals": 0,
+      "label": "no curse is cast during the first gap (901872)"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_cast_count",
+      "spell": 901868,
+      "equals": 0,
+      "label": "no curse is cast during the first gap (901868)"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_cast_count",
+      "spell": 901802,
+      "equals": 0,
+      "label": "no curse is cast during the first gap (901802)"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_cast_count",
+      "spell": 901801,
+      "equals": 0,
+      "label": "no curse is cast during the first gap (901801)"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_cast_count",
+      "spell": 901807,
+      "equals": 0,
+      "label": "no curse is cast during the first gap (901807)"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_cast_count",
+      "spell": 901806,
+      "equals": 0,
+      "label": "no curse is cast during the first gap (901806)"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_cast_count",
+      "spell": 901829,
+      "equals": 0,
+      "label": "no curse is cast during the first gap (901829)"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_cast_count",
+      "spell": 901870,
+      "equals": 0,
+      "label": "no curse is cast during the first gap (901870)"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_cast_count",
+      "spell": 901826,
+      "equals": 0,
+      "label": "no curse is cast during the first gap (901826)"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_cast_count",
+      "spell": 901827,
+      "equals": 0,
+      "label": "no curse is cast during the first gap (901827)"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_cast_count",
+      "spell": 901877,
+      "equals": 0,
+      "label": "no curse is cast during the first gap (901877)"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_cast_count",
+      "spell": 901862,
+      "equals": 0,
+      "label": "no curse is cast during the first gap (901862)"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_cast_count",
+      "spell": 901851,
+      "equals": 0,
+      "label": "no curse is cast during the first gap (901851)"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_cast_count",
+      "spell": 901853,
+      "equals": 0,
+      "label": "no curse is cast during the first gap (901853)"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_cast_count",
+      "spell": 901854,
+      "equals": 0,
+      "label": "no curse is cast during the first gap (901854)"
+    },
+    {
+      "action": "snapshot",
+      "actor": "hero",
       "metric": "system_messages",
-      "relative_to": "before",
-      "label": "no curse is announced during the first gap",
-      "equals": 0
+      "save_as": "before"
     },
     {
       "action": "console",

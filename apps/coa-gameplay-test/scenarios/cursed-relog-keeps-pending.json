@@ -1,10 +1,11 @@
 {
   "schema": 1,
-  "name": "Cursed!: a relog keeps the pending curse and announces it again",
+  "name": "Cursed!: a relog keeps the pending curse and gives it a fresh 10 s warning",
   "contract": [
-    "Issue #10788. A relog does not drop or reroll a pending curse. Narcolepsy 901841 is announced, the",
-    "character relogs 5 s into the 15 s warning, the same curse is announced again with a 10 s",
-    "remaining warning and still lands after the proof reply."
+    "Issue #10788. A relog does not drop or reroll a pending curse. Narcolepsy 901841 is forced and the",
+    "character relogs 5 s into its 15 s warning. On return the same curse is announced again with the",
+    "10 s first-return minimum, so even with its proof reply at 6 s it is still held at 9.5 s, then",
+    "lands. Chat counts are not used: the trial and login send their own chat lines."
   ],
   "timeout_ms": 300000,
   "location": {
@@ -72,29 +73,6 @@
     },
     {
       "action": "wait",
-      "ms": 500
-    },
-    {
-      "action": "console",
-      "command": "coa cursed presence Harnessa present"
-    },
-    {
-      "action": "snapshot",
-      "actor": "hero",
-      "metric": "system_messages",
-      "save_as": "back"
-    },
-    {
-      "action": "assert",
-      "actor": "hero",
-      "metric": "system_messages",
-      "relative_to": "back",
-      "label": "the pending curse is announced again",
-      "min": 1,
-      "within_ms": 2000
-    },
-    {
-      "action": "wait",
       "ms": 6000
     },
     {
@@ -102,13 +80,33 @@
       "command": "coa cursed reply Harnessa major"
     },
     {
+      "action": "wait",
+      "ms": 3500
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "aura",
+      "spell": 901841,
+      "equals": 0,
+      "label": "the returned curse keeps the 10 s first-return warning"
+    },
+    {
       "action": "assert",
       "actor": "hero",
       "metric": "aura",
       "spell": 901841,
       "equals": 1,
-      "label": "the pending curse still lands",
-      "within_ms": 6000
+      "label": "the pending curse still lands after it",
+      "within_ms": 1500
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_cast_count",
+      "spell": 901841,
+      "equals": 1,
+      "label": "it was cast once, not rerolled or repeated"
     }
   ]
 }

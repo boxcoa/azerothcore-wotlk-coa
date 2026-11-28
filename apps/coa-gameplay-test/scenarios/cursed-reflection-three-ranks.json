@@ -354,17 +354,36 @@
       "save_as": "reflect_hs_0"
     },
     {
+      "action": "snapshot",
+      "actor": "hero",
+      "metric": "melee_damage_total",
+      "save_as": "hs_white_0"
+    },
+    {
       "action": "cast",
       "actor": "hero",
       "spell": 78,
       "target": "foe"
     },
     {
-      "action": "attack_until_swings",
+      "action": "attack",
       "actor": "hero",
+      "target": "foe"
+    },
+    {
+      "action": "assert",
+      "actor": "hero",
+      "metric": "spell_damage_total",
+      "spell": 78,
       "target": "foe",
-      "swings": 1,
-      "timeout_ms": 10000
+      "relative_to": "hs_0",
+      "min": 1,
+      "within_ms": 6000,
+      "label": "Heroic Strike lands as a spell hit"
+    },
+    {
+      "action": "stop_attack",
+      "actor": "hero"
     },
     {
       "action": "snapshot",
@@ -378,12 +397,10 @@
     {
       "action": "assert",
       "actor": "hero",
-      "metric": "spell_damage_total",
-      "spell": 78,
-      "target": "foe",
-      "relative_to": "hs_0",
-      "min": 1,
-      "label": "Heroic Strike lands as a spell hit"
+      "metric": "melee_damage_total",
+      "relative_to": "hs_white_0",
+      "equals": 0,
+      "label": "no ordinary melee hit lands beside Heroic Strike"
     },
     {
       "action": "assert",
@@ -394,9 +411,19 @@
       "relative_to": "reflect_hs_0",
       "ratio_to": "hs",
       "min": 0.73,
-      "max": 1.0,
+      "max": 0.755,
       "within_ms": 2000,
-      "label": "the spell hit is reflected at 75% (the swing's own melee share may add to it)"
+      "label": "the spell hit is reflected at 75%"
+    },
+    {
+      "action": "learn",
+      "actor": "hero",
+      "spell": 2457
+    },
+    {
+      "action": "cast",
+      "actor": "hero",
+      "spell": 2457
     },
     {
       "action": "learn",
